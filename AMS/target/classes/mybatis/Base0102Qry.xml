@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Base0102">
+
+	<select id="getCommonCategory" parameterType="hashmap" resultType="hashmap">
+		SELECT MCC_L_CODE, MCC_L_NAME
+		FROM MF_COMM_CODE
+		WHERE CMN_DEL_STS = 'N'
+    	GROUP BY MCC_L_CODE, MCC_L_NAME
+    	<if test="schType=='Category' and schKeyword != ''">
+		HAVING MCC_L_NAME LIKE '%' || #{schKeyword} || '%'
+		</if>
+		ORDER BY MCC_L_CODE
+	</select>
+	
+	<select id="getCommonDivision" parameterType="hashmap" resultType="hashmap">
+		SELECT MCC_M_CODE, MCC_M_NAME, MCC_L_CODE, MCC_L_NAME
+		FROM MF_COMM_CODE
+		WHERE CMN_DEL_STS = 'N'
+    	AND MCC_M_CODE != ' '
+    	<if test="MCC_L_CODE != ''">
+      	AND MCC_L_CODE = #{MCC_L_CODE} 
+		</if>
+   		GROUP BY MCC_M_CODE, MCC_M_NAME,MCC_L_CODE, MCC_L_NAME
+   		<if test="schType=='Division' and schKeyword != ''">
+		HAVING MCC_M_NAME LIKE '%' || #{schKeyword} || '%'
+		</if>
+    	ORDER BY MCC_M_CODE
+	</select>
+	
+	<select id="getCommonSection" parameterType="hashmap" resultType="hashmap">
+		SELECT MCC_L_CODE, MCC_L_NAME, MCC_M_CODE, MCC_M_NAME, MCC_S_CODE, MCC_S_NAME, MCC_SORT_ORDER, MCC_COM_N1, MCC_COM_N2
+		FROM MF_COMM_CODE
+		WHERE CMN_DEL_STS = 'N'
+    	AND MCC_S_CODE != ' '
+    	<if test="MCC_M_CODE != ''">
+      	AND MCC_M_CODE = #{MCC_M_CODE}
+		</if>
+    	<if test="schType=='Section' and schKeyword != ''">
+		AND MCC_S_NAME LIKE '%' || #{schKeyword} || '%'
+		</if>
+    	ORDER BY MCC_S_CODE
+	</select>
+	
+	<select id="getCategoryInfo" parameterType="hashmap" resultType="hashmap">
+        SELECT MCC_L_CODE, MCC_L_NAME 
+        FROM MF_COMM_CODE
+        WHERE MCC_L_CODE = #{MCC_L_CODE}
+        AND CMN_DEL_STS = 'N'
+        GROUP BY MCC_L_CODE, MCC_L_NAME
+	</select>
+	
+	<select id="getDivisionInfo" parameterType="hashmap" resultType="hashmap">
+		select MCC_L_CODE, MCC_L_NAME, MCC_M_CODE, MCC_M_NAME
+		FROM MF_COMM_CODE
+		WHERE MCC_M_CODE=#{MCC_M_CODE}
+		GROUP BY MCC_L_CODE, MCC_L_NAME, MCC_M_CODE, MCC_M_NAME
+	</select>
+	
+	<select id="getSectionInfo" parameterType="java.util.LinkedHashMap" resultType="hashmap">
+		SELECT MCC_L_CODE, MCC_L_NAME, MCC_M_CODE, MCC_M_NAME, MCC_S_CODE, MCC_S_NAME, MCC_SORT_ORDER, MCC_COM_N1, MCC_COM_N2, MCC_COM_S3, MCC_COM_S2, MCC_COM_S1
+    	FROM MF_COMM_CODE
+    	WHERE MCC_S_CODE = #{MCC_S_CODE}
+    	AND MCC_L_CODE= #{MCC_L_CODE}
+      	AND MCC_M_CODE= #{MCC_M_CODE}
+    	AND CMN_DEL_STS = 'N'
+    	AND MCC_S_CODE != ' '
+    	ORDER BY MCC_SORT_ORDER
+	</select>
+</mapper>

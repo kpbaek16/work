@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Prevent0503">
+
+	<select id="selectVcnlist" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	SELECT YVA_DOCNO, TO_CHAR(YVI_JJDATE,'YYYY-MM-DD') as YVI_JJDATE, MVI_VCNNAME, MVI_PRODNAME, YVI_VOL, MAC_NAME, MVI_VVRMNAME
+	FROM YB_VCN_ANI, MF_ANI_INFO, YB_VCN_INF, MF_VCN_INFO, MF_ANI_CLS, MF_VVRM_INFO
+	WHERE MAI_ANICODE = YVA_ANICODE
+	AND YVI_DOCNO =  YVA_DOCNO
+	AND MVI_VCNNO = YVI_VCNNO
+	AND MAI_ANICLSCODE = MAC_ANICLSCODE
+	AND MAI_VVRMNO = MVI_VVRMNO
+	
+	<if test="cal_1 != ''">
+	<![CDATA[
+	AND TO_CHAR(YVI_JJDATE,'YYYY-MM-DD') >= #{cal_1}
+	]]>
+	</if>
+		
+	<if test="cal_2 != ''">
+	<![CDATA[
+	AND TO_CHAR(YVI_JJDATE,'YYYY-MM-DD') <= #{cal_2}
+	]]>
+	</if>
+	
+	<if test="vvrmKeyword != ''">
+	AND MVI_VVRMNAME LIKE '%' || #{vvrmKeyword} || '%'
+	</if>
+	
+	<if test="nameKeyword != ''">
+	AND MAC_NAME LIKE '%' || #{nameKeyword} || '%'
+	</if>
+	
+	<if test="vcnKeyword != ''">
+	AND MVI_VCNNAME LIKE '%' || #{vcnKeyword} || '%'
+	</if>
+	
+	<if test="prdKeyword != ''">
+	AND MVI_PRODNAME LIKE '%' || #{prdKeyword} || '%'
+	</if>
+	ORDER BY YVI_JJDATE ASC
+	</select>
+	
+</mapper>

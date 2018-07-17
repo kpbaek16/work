@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Treat0402">
+	<select id="selectJnlReq" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	SELECT rownum as SEQ, e.* FROM (
+	select JJR_DocNo, to_char(JJR_RCDate,'yyyy-mm-dd') as JJR_RCDate, JJR_JRType, JJR_JRNo, MAI_TeamNo, fn_getDptName(MAI_TeamNo) as DptName, 
+		   MAI_VvrmNo, fn_getVvrmName(MAI_VvrmNo) as VvrmName, BAA_AniCode, MAC_Name, MAI_BName, MAI_Sex, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as SexName,
+		   JJR_Cmnt, fn_getComCode_Cls3Name(300, 301, JJR_RCSts) as JJR_RCSts
+	FROM JN_JINRYO_RC, MF_ANI_CLS, MF_ANI_INFO, BZ_ANI_ATCH, MF_VVRM_INFO
+	WHERE 1=1
+	AND MAI_VvrmNo = MVI_VvrmNo
+	AND MAI_AniClsCode = MAC_AniClsCode 
+	AND MAI_AniCode    = BAA_AniCode
+	AND JJR_DocNo      = BAA_DocNo
+	<if test="jinryoKind != ''">
+		AND JJR_JRType = #{jinryoKind}
+	</if>
+	<if test="jinryoStatus != ''">
+		AND JJR_RCSts = #{jinryoStatus}
+	</if>
+	<if test="nameKeyword != ''">
+		AND MAC_Name LIKE '%' || #{nameKeyword} || '%'
+	</if>
+	<if test="numKeyword != ''">
+		AND JJR_JRNO LIKE '%' || #{numKeyword} || '%'
+	</if>
+	<if test="vvrmKeyword != ''">
+		AND MVI_VVRMNAME LIKE '%' || #{vvrmKeyword} || '%'
+	</if>
+	<if test="cal_1 != ''">
+	    AND JJR_RCDate <![CDATA[>=]]> to_date(#{cal_1},'yyyy-mm-dd') 
+	</if>
+	<if test="cal_2 != ''">
+	    AND JJR_RCDate <![CDATA[<=]]> to_date(#{cal_2} || '23:59:59','YYYY-MM-DD hh24:mi:ss') 
+	</if>
+	ORDER BY JJR_RCDate 
+	) e
+	</select>
+	<select id="getRctDetail" resultType="java.util.LinkedHashMap" parameterType="String">
+	select JJR_DocNo, to_char(nvl(JJR_RCDate, to_date('1900-01-01','YYYY-MM-DD')), 'YYYY-MM-DD') as JJR_RCDate, JJR_JRType, JJR_JRNo, BAA_AniCode, JJR_Cmnt, JJR_RCSts, FN_GETDPTNAME(MUI_TEAMNO) as DPTINFO, JJR_USERID, MUI_NAME
+	  from JN_JINRYO_RC, MF_ANI_CLS, MF_ANI_INFO, BZ_ANI_ATCH, MF_USER_INFO
+	 where MAI_AniClsCode = MAC_AniClsCode 
+ 	   and MAI_AniCode    = BAA_AniCode 
+ 	   and JJR_DocNo      = BAA_DocNo 
+ 	   and MUI_ID		  = JJR_UserID
+	<if test="value != ''">
+		and JJR_DocNo     = #{value}
+	</if>
+	</select>
+	<select id="getVVRMdata" resultType="java.util.LinkedHashMap">
+	select MVI_VvrmNo, MVI_VvrmName, MVI_TeamNo
+	  from MF_VVRM_INFO
+	 order by MVI_VvrmName
+	</select>
+	<select id="getAniINFO" resultType="java.util.LinkedHashMap"  parameterType="String">
+	select MAI_AniCode, MAI_AniClsCode, MAI_BName, MAI_Sex, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as SexName,
+		   MAI_VvrmNo, fn_getVvrmName(MAI_VvrmNo) as VvrmName, MAI_Birthday, MAC_Name, MAC_EName, 
+		   to_char(nvl(DAIO_IODate, to_date('1900-01-01','YYYY-MM-DD')), 'YYYY-MM-DD') as DAIO_IODate, DAIO_Place,
+		   CASE WHEN MAI_Birthday IS NOT NULL THEN
+		   TRUNC(MONTHS_BETWEEN(SYSDATE, MAI_Birthday)/12) || '년 ' ||
+		   TRUNC(MONTHS_BETWEEN(SYSDATE, MAI_Birthday) -
+		   TRUNC(MONTHS_BETWEEN(SYSDATE, MAI_Birthday)/12) * 12) || '개월' ELSE '' END AS CURAGE
+ 	  from MF_ANI_CLS, 
+ 	  	   MF_ANI_INFO left join ( select DAIO_AniCode, DAIO_IOType, DAIO_IODate, DAIO_Place from DT_ANI_IO where DAIO_IOType = '1' and rownum <![CDATA[<=]]> 1 order by DAIO_IODate desc ) IOInf  
+	 	   on DAIO_AniCode = MAI_AniCode 
+	 where MAI_AniCode = #{value}
+	   and MAI_AniClsCode = MAC_AniClsCode 
+	</select>
+	<select id="selectANISEQ" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	SELECT * FROM (
+		( SELECT ROWNUM AS SEQ, e.* FROM (
+	select MAI_AniCode, MAI_AniClsCode, MAC_Name, MAI_BName, MAC_SName, MAI_VvrmNo, fn_getVvrmName(MAI_VvrmNo) as VvrmName, 
+		   MAI_Sex, fn_getComCode_Cls3Name(200, 202,  MAI_Sex) as SexName, MAI_Birthday, MAC_EName, fn_getComCode_Cls3Name('200','208',MAI_DethType) as MAI_DethType,
+		   CASE WHEN MAI_Birthday IS NOT NULL THEN
+		   TRUNC(MONTHS_BETWEEN(SYSDATE, MAI_Birthday)/12) || '년 ' ||
+		   TRUNC(MONTHS_BETWEEN(SYSDATE, MAI_Birthday) -
+		   TRUNC(MONTHS_BETWEEN(SYSDATE, MAI_Birthday)/12) * 12) || '개월' ELSE '' END AS CURAGE
+	  from MF_ANI_CLS, MF_ANI_INFO
+	 where MAI_AniClsCode = MAC_AniClsCode
+	   and MF_ANI_INFO.CMN_DEL_STS='N' 
+	<if test="ANI_NAME != ''">
+		and MAC_Name like '%' || #{ANI_NAME} || '%'
+	</if>
+	<if test="ANI_CODE != ''">
+		and MAI_AniCode like '%' || #{ANI_CODE} || '%'
+	</if>
+	<if test="SEXval != ''">
+		and MAI_SEX = #{SEXval}
+	</if>
+	<if test="VVRMval != ''">
+		AND MAI_VvrmNo = #{VVRMval}
+	</if>
+	<if test="Dethtype != '' and Dethtype != 0">
+		AND MAI_DethType = #{Dethtype}
+	</if>
+	ORDER BY MAC_Name
+			) e
+		)
+	) WHERE SEQ <![CDATA[>=]]> 10 * (#{page}-1) + 1 AND SEQ <![CDATA[<=]]> 10 * #{page}
+	</select>
+	<select id="selectANISEQ_Count" resultType="Integer" parameterType="hashmap">
+	select count(*)
+	  from MF_ANI_CLS, MF_ANI_INFO
+	 where MAI_AniClsCode = MAC_AniClsCode
+	   and MF_ANI_INFO.CMN_DEL_STS='N' 
+	<if test="ANI_NAME != ''">
+		and MAC_Name like '%' || #{ANI_NAME} || '%'
+	</if>
+	<if test="ANI_CODE != ''">
+		and MAI_AniCode like '%' || #{ANI_CODE} || '%'
+	</if>
+	<if test="SEXval != ''">
+		and MAI_SEX = #{SEXval}
+	</if>
+	<if test="VVRMval != ''">
+		AND MAI_VvrmNo = #{VVRMval}
+	</if>
+	<if test="Dethtype != '' and Dethtype != 0">
+		AND MAI_DethType = #{Dethtype}
+	</if>
+	</select>
+	<select id="selectMac_Docno" resultType="String" parameterType="hashmap">
+	select max(${ag_ColName}) as maxDocNo 
+	  from ${ag_TableName}
+	 where ${ag_ColName} like #{wk_xxYYYYMMDD} || '%'
+	</select>
+	<insert id="insertJinryoInfo" parameterType="hashmap">
+		insert into JN_JINRYO_RC(JJR_DocNo, JJR_RCDate, JJR_UserID, JJR_JRType, JJR_JRNo, JJR_Cmnt, JJR_RCSts, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID)
+			 			  values(#{DOCNO}, to_date(#{RCDate}, 'yyyy-mm-dd'), #{USERID}, #{JRType}, '', #{CMNT}, '0', 'N',SYSDATE,'TREAT0402',#{USERID},SYSDATE,'TREAT0402',#{USERID})
+	</insert>
+	<insert id="insertANI_ATCHInfo" parameterType="hashmap">
+		 insert into BZ_ANI_ATCH ( BAA_DocNo, BAA_BzCls1, BAA_BzCls2, BAA_BzCls3, BAA_AniCode, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID)
+			 			  values(#{DOCNO}, 'JY', 'N', 'N', #{ANICODE}, 'N', SYSDATE,'TREAT0402',#{USERID},SYSDATE,'TREAT0402',#{USERID})
+	</insert>
+	<update id="updateRCT_HosptlCnfm" parameterType="hashmap">
+		update JN_JINRYO_RC set JJR_RCSts='1', CMN_DEL_STS='N', CMN_UPD_DATE=SYSDATE, CMN_UPD_PROG='TREAT0402', CMN_UPD_ID=#{USERID} where JJR_DocNo = #{DOCNO}
+	</update>
+	<update id="updateJinryoRCTInfo" parameterType="hashmap">
+		update JN_JINRYO_RC set JJR_JRType=#{JRTYPE}, JJR_Cmnt=#{CMNT}, CMN_DEL_STS='N', CMN_UPD_DATE=SYSDATE, CMN_UPD_PROG='TREAT0402', CMN_UPD_ID=#{USERID} where JJR_DocNo = #{DOCNO}
+	</update>
+	<delete id="deleteJinryoRCTInfo"  parameterType="String">
+		delete from JN_JINRYO_RC where JJR_DocNo = #{value}
+	</delete>
+	<delete id="deleteANI_ATCHInfo"  parameterType="String">
+		delete from BZ_ANI_ATCH where BAA_DocNo = #{value}
+	</delete>
+</mapper>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="PC">
+
+	<select id="K01" parameterType="hashmap" resultType="hashmap">
+	SELECT TO_CHAR(DAIO_IODate ,'YYYY-MM-DD') as DAIO_IODate, DAIO_Place, JJR_DocNo, nvl(JJJ_DocNo, ' ') as JJJ_DocNo, TO_CHAR(JJR_RCDate,'YYYY-MM-DD') as JJR_RCDate, TO_CHAR(JJJ_SDate,'YYYY-MM-DD') as JJJ_SDate, 
+	fn_getComCode_Cls3Name(300, 300, JJJ_JRType) as JJJ_JRType , MAI_TeamNo, MAC_ENAME, TO_CHAR(MAI_BIRTHDAY,'YYYY-MM-DD') as MAI_BIRTHDAY,
+	fn_getDptName(MAI_TeamNo) as DptName        , MAI_VvrmNo, fn_getVvrmName(MAI_VvrmNo) as VvrmName, BAA_AniCode, MAC_Name, MAI_BNAME, 
+	MAI_Sex, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as MAI_GENDER, nvl(JJJ_JRDzzName, ' ') as JJJ_JRDzzName       , nvl(JJJ_JRCmnt, ' ') as JJJ_JRCmnt, 
+	fn_getComCode_Cls3Name('300', '302', nvl(JJJ_JRSts, ' ')) as JRStsName       , JJR_Cmnt, JJR_JRType, fn_getComCode_Cls3Name('300', '300', nvl(JJR_JRType, ' ')) as JrTypeName, 
+	JJJ_JRDzzType, JJJ_Insu, JJJ_ReqOrga, TO_CHAR(JJJ_EDate,'YYYY-MM-DD') as JJJ_EDate, JJJ_JRSts, JJJ_SUserID, JJJ_EUserID, fn_getComCode_Cls3Name('300', '303', nvl(JJJ_JRDzzType, ' ')) as JRDzzTypeName    
+	FROM JN_JINRYO_RC left join JN_JINRYO_JNL on JJJ_RCNo = JJR_DocNo , MF_ANI_CLS, MF_ANI_INFO, BZ_ANI_ATCH, DT_ANI_IO   
+	WHERE MAI_AniClsCode = MAC_AniClsCode     
+	AND MAI_AniCode    = BAA_AniCode     
+	AND JJR_DocNo      = BAA_DocNo    
+	AND daio_anicode = baa_anicode
+  	AND  DAIO_IOType = '1'   
+	AND JJJ_DOCNO = #{JJJ_DOCNO}
+	ORDER BY JJR_RCDate, JJJ_DocNo
+	</select>
+	
+	<select id="K01_Result" parameterType="hashmap" resultType="hashmap">
+	  select Rownum as RNUM, MBI_BdInspCode, MCC_S_NAME, MCC_COM_S1, MBI_Mean, MBI_StdDevi, nvl(JJDKBL_Rslt, 0.0) as JJDKBL_Rslt, nvl(JJDKBL_Cmnt, '') as JJDKBL_Cmnt,
+	 TO_CHAR(JJDKBL_KSDate ,'YYYY-MM-DD') as JJDKBL_KSDate,  fn_getComCode_Cls3Name('500', '500', JJDKBL_KSTYPE) as JJDKBL_KSTYPE    
+ 	 from MF_COMM_CODE, MF_BDINSP_ITEM left join JN_JINRYO_DATE_KBL on MBI_BdInspCode = JJDKBL_Item
+ 	 and JJDKBL_Item = MBI_BdInspCode                       
+ 	 and JJDKBL_KSType = '1'                        
+ 	 and JJDKBL_DocNo  = #{JJDKY_DOCNO}
+ 	 where MCC_L_CODE  = '500'      
+ 	 and MCC_M_CODE  = '502'      
+ 	 and MCC_S_CODE  = MBI_BdInspCode      
+ 	 and MBI_AniClsCode = #{MBI_ANICLSCODE}
+	</select>
+
+	<select id="K02" parameterType="hashmap" resultType="hashmap">
+	SELECT Rownum as RNUM, JJDKY_DOCNO, JJJ_DOCNO, JJJ_JRDZZNAME, JJJ_JRCMNT, MAC_NAME,MAI_BNAME , MAC_ENAME, MAI_ANICODE, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as MAI_GENDER, TO_CHAR(JJDKY_KSDATEYY,'YYYY-MM-DD') as JJDKY_KSDATEYY,
+	fn_getVvrmName(MAI_VvrmNo) as VvrmName, DAIO_Place , TO_CHAR(MAI_BIRTHDAY,'YYYY-MM-DD') as MAI_BIRTHDAY, fn_getComCode_Cls3Name(500, 500, JJDKY_KSType) as JJDKY_KSType,
+	FLOOR(MONTHS_BETWEEN(SYSDATE,TO_CHAR(MAI_Birthday,'YYYY-MM-DD'))/12)AS AGE,
+	FLOOR(MONTHS_BETWEEN( SYSDATE, TO_CHAR(MAI_Birthday,'YYYY-MM-DD'))) - FLOOR(MONTHS_BETWEEN( SYSDATE, TO_CHAR(MAI_Birthday,'YYYY-MM-DD')) / 12 ) * 12 as AGE2,
+	JJDKSK_WAY, JJDKSK_PART, JJDKSK_RSLT 
+	FROM jn_jinryo_date_ksk, JN_JINRYO_DATE_KY, JN_JINRYO_JNL,BZ_ANI_ATCH, MF_ANI_CLS, MF_ANI_INFO left join ( select DAIO_AniCode, DAIO_IOType, DAIO_IODate, DAIO_Place from DT_ANI_IO 
+	WHERE DAIO_IOType = '1'  <![CDATA[ and rownum <=1 ]]> order by DAIO_IODate desc ) IOInf  on DAIO_AniCode = MAI_AniCode 
+	WHERE JJJ_DOCNO = JJDKY_JRNO
+	AND JJJ_RCNO = BAA_DOCNO
+	AND MAI_AniClsCode = MAC_AniClsCode 
+	AND MAI_AniCode = BAA_AniCode
+	AND JJDKSK_DOCNO = JJDKY_DOCNO
+	AND JJJ_DOCNO = #{JJJ_DOCNO}
+	AND JJDKY_DOCNO = #{JJDKY_DOCNO}
+	</select>
+	
+	<select id="K03" parameterType="hashmap" resultType="hashmap">
+	SELECT Rownum as RNUM, JJDKY_DOCNO, JJJ_DOCNO, JJJ_JRDZZNAME, JJJ_JRCMNT, MAC_NAME,MAI_BNAME , MAC_ENAME, MAI_ANICODE, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as MAI_GENDER, TO_CHAR(JJDKY_KSDATEYY,'YYYY-MM-DD') as JJDKY_KSDATEYY,
+	fn_getVvrmName(MAI_VvrmNo) as VvrmName, DAIO_Place , TO_CHAR(MAI_BIRTHDAY,'YYYY-MM-DD') as MAI_BIRTHDAY, fn_getComCode_Cls3Name(500, 500, JJDKY_KSType) as JJDKY_KSType,
+	FLOOR(MONTHS_BETWEEN(SYSDATE,TO_CHAR(MAI_Birthday,'YYYY-MM-DD'))/12)AS AGE,
+	FLOOR(MONTHS_BETWEEN( SYSDATE, TO_CHAR(MAI_Birthday,'YYYY-MM-DD'))) - FLOOR(MONTHS_BETWEEN( SYSDATE, TO_CHAR(MAI_Birthday,'YYYY-MM-DD')) / 12 ) * 12 as AGE2,
+	JJDKJK_WAY, JJDKJK_PART, JJDKJK_RSLT
+	FROM jn_jinryo_date_kjk, JN_JINRYO_DATE_KY, JN_JINRYO_JNL,BZ_ANI_ATCH, MF_ANI_CLS, MF_ANI_INFO left join ( select DAIO_AniCode, DAIO_IOType, DAIO_IODate, DAIO_Place from DT_ANI_IO 
+	WHERE DAIO_IOType = '1'  <![CDATA[ and rownum <=1 ]]> order by DAIO_IODate desc ) IOInf  on DAIO_AniCode = MAI_AniCode 
+	WHERE JJJ_DOCNO = JJDKY_JRNO
+	AND JJJ_RCNO = BAA_DOCNO
+	AND MAI_AniClsCode = MAC_AniClsCode 
+	AND MAI_AniCode = BAA_AniCode
+	AND JJDKJK_DOCNO = JJDKY_DOCNO
+	AND JJJ_DOCNO = #{JJJ_DOCNO}
+	AND JJDKJK_DOCNO = #{JJDKY_DOCNO}
+	</select>
+	
+	<select id="K04" parameterType="hashmap" resultType="hashmap">
+	select JJR_DocNo, JJJ_DocNo, TO_CHAR(JJR_RCDate,'YYYY-MM-DD') as JJR_RCDate, TO_CHAR(JJJ_SDate,'YYYY-MM-DD') as JJJ_SDate , nvl(JJJ_JRType, '') as JJJ_JRType, 
+	MAI_TeamNo, fn_getDptName(MAI_TeamNo) as DptName, MAI_VvrmNo, fn_getVvrmName(MAI_VvrmNo) as VvrmName, BAA_AniCode, MAC_Name, MAI_BName, MAC_ENAME,
+   fn_getComCode_Cls3Name(200, 202, MAI_SEX) as MAI_GENDER, nvl(JJJ_JRDzzName, ' ') as JJJ_JRDzzName, nvl(JJJ_JRCmnt, ' ') as JJJ_JRCmnt, 
+   fn_getComCode_Cls3Name('300', '302', nvl(JJJ_JRSts, ' ')) as JRStsName, JJR_Cmnt, JJR_JRType, fn_getComCode_Cls3Name('300', '300', nvl(JJR_JRType, ' ')) as JrTypeName, 
+   JJJ_JRDzzType, JJJ_Insu, JJJ_ReqOrga, TO_CHAR(JJJ_EDate,'YYYY-MM-DD') as JJJ_EDate, JJJ_JRSts, JJJ_SUserID, JJJ_EUserID, 
+   fn_getComCode_Cls3Name('300', '303', nvl(JJJ_JRDzzType, ' ')) as JRDzzTypeName,TO_CHAR(MAI_Birthday,'YYYY-MM-DD') as MAI_Birthday,
+   	FLOOR(MONTHS_BETWEEN(SYSDATE,TO_CHAR(MAI_Birthday,'YYYY-MM-DD'))/12)AS AGE,
+	FLOOR(MONTHS_BETWEEN( SYSDATE, TO_CHAR(MAI_Birthday,'YYYY-MM-DD'))) - FLOOR(MONTHS_BETWEEN( SYSDATE, TO_CHAR(MAI_Birthday,'YYYY-MM-DD')) / 12 ) * 12 as AGE2
+   FROM JN_JINRYO_RC left join JN_JINRYO_JNL on JJJ_RCNo = JJR_DocNo, MF_ANI_CLS, MF_ANI_INFO, BZ_ANI_ATCH   
+   where MAI_AniClsCode = MAC_AniClsCode     
+   and MAI_AniCode    = BAA_AniCode     
+   and JJR_DocNo      = BAA_DocNo      
+   and JJJ_RCNO = #{JJJ_RCNO}
+   and JJJ_DOCNO = #{JJJ_DOCNO}
+   </select>
+	
+</mapper>

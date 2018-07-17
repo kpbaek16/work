@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Jour0301">
+
+	<select id="selectDayJnlList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	   SELECT	S.SDJ_DOCNO,
+	            TO_CHAR(SDJ_JNLDATE,'YYYY-MM-DD') as SDJ_JNLDATE,
+	            S.SDJ_VVRMNO,
+	            S.SDJ_SSUSERID,
+	            S.SDJ_WTHENO,
+	            S.SDJ_TEMPL,
+	            S.SDJ_TEMPH,
+	            S.SDJ_USERINFO,
+	            S.CMN_DEL_STS,
+                TO_CHAR(S.SDJ_JNLDATE,'YYYY-MM-DD') JNLDATE,
+                (SELECT MUI_NAME
+                 FROM   MF_USER_INFO
+                 WHERE  MUI_ID = S.SDJ_SSUSERID) MUI_NAME, V.MVI_VVRMNAME,
+                  (SELECT DECODE(BDC_PROCSTS,'X','결재대기','P','결재진행','E','결재완료') 
+                 FROM BZ_DOC_COMM
+                 GROUP BY BDC_DOCNO, BDC_DOCTYPE, BDC_KJNO, BDC_PROCSTS   
+                 HAVING BDC_DOCNO = S.SDJ_DOCNO
+                 AND BDC_KJNO = MAX(BDC_KJNO)
+                 AND BDC_DOCTYPE != '4') PROCSTS
+	    FROM SY_DAILY_JNL S, MF_VVRM_INFO V
+	    WHERE S.CMN_DEL_STS = 'N' 
+      AND S.SDJ_VVRMNO = V.MVI_VVRMNO
+		<if test="cal_1 != ''">
+		<![CDATA[
+	    AND TO_CHAR(SDJ_JNLDATE,'YYYY-MM-DD') >= #{cal_1}
+		]]>
+		</if>
+		<if test="cal_2 != ''">
+		<![CDATA[
+	    AND TO_CHAR(SDJ_JNLDATE,'YYYY-MM-DD') <= #{cal_2}
+		]]>
+		</if>
+		<if test="vlist != ''">
+		AND MVI_VVRMNO = #{vlist}
+		</if>
+        ORDER BY SDJ_JNLDATE DESC
+                ,SDJ_SSUSERID DESC
+	</select>
+
+	<select id="selectUserKjpList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT A.* 
+            ,(SELECT MCC_S_NAME FROM MF_COMM_CODE
+              WHERE MCC_L_CODE = '100' AND MCC_M_CODE = '104' AND MCC_S_CODE = A.MUK_RCVTYPE) AS MCC_S_NAME
+		    ,(SELECT MDI_DPTNAME FROM MF_DPT_INFO
+		      WHERE MDI_LINKNO = A.MTI_DPTNO) AS MDI_DPTNAME
+            ,FN_GETCOMCODE_CLS3NAME ('100', '100', MUI_JCCODE) TXT_MUI_JCCODE
+		FROM (
+		    SELECT A.* 
+		    FROM (
+		        SELECT A.MUK_KJID,
+		               A.MUK_RCVTYPE,
+		               A.MUK_KJSEQ,
+		               A.CMN_DEL_STS,
+		               B.MUI_ID,
+		               B.MUI_TEAMNO,
+		               B.MUI_DPTLVLNAME,
+		               B.MUI_DPTLVLCODE,
+		               B.MUI_DPTPOSITCODE,
+		               B.MUI_DPTPOSITNAME,
+		               B.MUI_NAME,
+		               B.MUI_LINCNO,
+		               B.MUI_JCCODE,
+		               (SELECT MTI_DPTNO FROM MF_TEAM_INFO
+		                WHERE MTI_TEAMNO = B.MUI_TEAMNO) AS MTI_DPTNO
+		        FROM   MF_USER_KJP A, MF_USER_INFO B
+		        WHERE  A.MUK_USERID = B.MUI_ID
+		        AND A.CMN_DEL_STS = 'N'
+		        AND B.MUI_ID = #{ss_id}
+		    )  A
+		    ORDER BY   A.MUK_RCVTYPE ASC, A.MUK_KJSEQ ASC
+		)  A
+	</select>
+	
+	<select id="selectUserRcvTypeList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+    SELECT A.* 
+        ,(SELECT MDI_DPTNAME FROM MF_DPT_INFO
+          WHERE MDI_LINKNO = A.MTI_DPTNO) AS MDI_DPTNAME
+    FROM (
+        SELECT MUK_USERID, MUK_KJID, MUK_RCVTYPE, MUK_KJSEQ, MUI_NAME,
+               FN_GETCOMCODE_CLS3NAME ('100', '100', MUI_JCCODE) TXT_MUI_JCCODE,
+               (SELECT MTI_DPTNO FROM MF_TEAM_INFO
+                WHERE MTI_TEAMNO = UI.MUI_TEAMNO) AS MTI_DPTNO,
+	           (SELECT MTI_TEAMNAME FROM MF_TEAM_INFO
+	            WHERE MTI_TEAMNO = UI.MUI_TEAMNO) AS MTI_TEAMNAME
+        FROM   MF_USER_KJP UK, MF_USER_INFO UI
+        WHERE  UK.MUK_KJID = UI.MUI_ID	 
+        AND UK.CMN_DEL_STS = 'N'
+        AND UK.MUK_RCVTYPE = #{muk_rcvtype} 
+        AND UK.MUK_USERID = #{muk_userid} 
+    )  A
+	</select>
+
+	<update id="deleteUserRcvType" parameterType="hashmap">
+		 DELETE FROM MF_USER_KJP
+		 WHERE MUK_USERID = #{muk_userid} 
+		 AND MUK_KJID = #{muk_kjid} 
+	</update>
+	
+	<!-- 문서정보 -->
+	<update id="updateSDJ_DocInfo" parameterType="java.util.Map">
+	MERGE INTO SY_DAILY_JNL
+            USING DUAL
+            ON (SDJ_DocNo =  #{sdj_docno})
+            WHEN MATCHED THEN
+                      UPDATE SET
+                            SDJ_USERINFO = #{SDJ_USERINFO},
+                            SDJ_WTHENO = #{SDJ_WTHENO},
+                           CMN_UPD_ID =   #{USERID},
+                           CMN_UPD_DATE = SYSDATE,
+                           CMN_UPD_PROG = 'updateSDJ_DocInfo'
+            WHEN NOT MATCHED THEN             
+	INSERT (SDJ_DocNo,SDJ_USERINFO, SDJ_WTHENO, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID ) 
+	VALUES (#{sdj_docno},#{SDJ_USERINFO},#{SDJ_WTHENO}, 'N', SYSDATE, 'insertSDJ_DocInfo',#{USERID})
+	</update>
+	
+	<!-- 지시사항 -->
+	<update id="updateSDJ05_Msg" parameterType="java.util.Map">
+    MERGE INTO SY_DAILY_JNL05
+            USING DUAL
+            ON (SDJ05_DOCNO =#{sdj_docno})
+            WHEN MATCHED THEN
+                      UPDATE SET
+                            SDJ05_CMNTETC =  #{SDJ05_CMNTETC},
+                           SDJ05_RSLTETC =  #{SDJ05_RSLTETC}, 
+                           SDJ05_ETCETC =  #{SDJ05_ETCETC},
+                           CMN_UPD_ID =  #{USERID},
+                           CMN_UPD_PROG = 'updateSDJ05_Msg',
+                           CMN_UPD_DATE = SYSDATE
+            WHEN NOT MATCHED THEN
+            INSERT (SDJ05_DOCNO, SDJ05_CMNTETC, SDJ05_RSLTETC, SDJ05_ETCETC, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID) 
+            VALUES (#{sdj_docno},#{SDJ05_CMNTETC}, #{SDJ05_RSLTETC}, #{SDJ05_ETCETC},'N',SYSDATE,'insertSDJ05_Msg',#{USERID})
+	</update>
+	
+	<!-- 시설안전점검 -->
+	<select id="selectJNL03_SJ" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	select SDJ03SJ_DOCNO, SDJ03SJ_BZCLS1, SDJ03SJ_SSNO, SDJ03SJ_SSNAME, SDJ03SJ_SSRSLT, SDJ03SJ_NGCNTNT, SDJ03SJ_PROCCMNT, SDJ03SJ_CMNT
+	FROM SY_DAILY_JNL03_SJ 
+	WHERE SDJ03SJ_DocNo = #{sdj_docno}
+	</select>
+	
+	<!-- 동물 및 시설점검 -->
+	<!-- 동물사 온도-->
+	<select id="getSVG_TEMP" resultType="java.util.LinkedHashMap"  parameterType="hashmap">
+	SELECT SVG_DOCNO, SVG_VVRMNO, SVG_IN_HTMPT,SVG_IN_LTMPT, SVG_OUT_HTMPT, SVG_OUT_LTMPT
+	FROM SY_VVRM_GRP
+	WHERE SVG_DOCNO = #{sdj_docno}
+	</select>
+	
+	<!-- 시설안전점검 수정 -->
+	
+	<!-- 동물사 온도 수정-->
+	<update id="updateSVG_Temp" parameterType="java.util.Map">
+	MERGE INTO SY_VVRM_GRP
+            USING DUAL
+           ON (SVG_DOCNO =  #{sdj_docno})
+            WHEN MATCHED THEN
+                      UPDATE SET
+                              SVG_IN_HTMPT = #{SVG_IN_HTMPT},
+                              SVG_IN_LTMPT = #{SVG_IN_LTMPT},
+                              SVG_OUT_HTMPT = #{SVG_OUT_HTMPT},
+                              SVG_OUT_LTMPT = #{SVG_OUT_LTMPT},
+                              CMN_UPD_DATE = SYSDATE,
+                              CMN_UPD_PROG = 'updateSVG_Temp',
+                              CMN_UPD_ID = #{USERID}
+            WHEN NOT MATCHED THEN             
+	INSERT (SVG_DOCNO, SVG_IN_HTMPT, SVG_IN_LTMPT, SVG_OUT_HTMPT, SVG_OUT_LTMPT, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID) 
+	VALUES (#{sdj_docno}, #{SVG_IN_HTMPT}, #{SVG_IN_LTMPT}, #{SVG_OUT_HTMPT}, #{SVG_OUT_LTMPT}, 'N', SYSDATE, 'insertSVG_Temp', #{USERID})
+	</update>
+	
+	<!-- 내외 순찰실적, 시설점검 특이사항, 개선사항 -->
+	<select id="getSDJ_SJ" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT SDJS_DOCNO, SDJS_IN_TM, SDJS_IN_S, SDJS_IN_WL_YN, SDJS_IN_CMNT, SDJS_OUT_TM, SDJS_OUT_S, SDJS_OUT_WL_YN, SDJS_OUT_CMNT, SDJS_SS_CMNT, SDJS_SC_CMNT
+  	FROM SY_DAILY_JNL_SJ
+ 	WHERE SDJS_DOCNO =  #{sdj_docno}
+	</select>
+	
+	<!-- 내외 순찰실적 수정 -->
+	<update id="updateSDJ_Sj" parameterType="java.util.Map">
+	MERGE INTO SY_DAILY_JNL_SJ
+            USING DUAL
+           ON (SDJS_DOCNO =  #{sdj_docno})
+            WHEN MATCHED THEN
+                      UPDATE SET
+                              SDJS_IN_TM = #{SDJS_IN_TM},
+                              SDJS_IN_S = #{SDJS_IN_S},
+                              SDJS_IN_WL_YN = #{SDJS_IN_WL_YN}, 
+                              SDJS_IN_CMNT = #{SDJS_IN_CMNT},
+                              SDJS_OUT_TM = #{SDJS_OUT_TM},
+                              SDJS_OUT_S = #{SDJS_OUT_S},
+                              SDJS_OUT_WL_YN = #{SDJS_OUT_WL_YN},
+                              SDJS_OUT_CMNT = #{SDJS_OUT_CMNT},
+                              CMN_UPD_DATE = SYSDATE,
+                              CMN_UPD_PROG = 'updateSDJ_Sj',
+                              CMN_UPD_ID = #{USERID}
+            WHEN NOT MATCHED THEN             
+	INSERT (SDJS_DOCNO, SDJS_IN_TM, SDJS_IN_S ,SDJS_IN_WL_YN ,SDJS_IN_CMNT, SDJS_OUT_TM, SDJS_OUT_S, SDJS_OUT_WL_YN, SDJS_OUT_CMNT, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID) 
+	VALUES (#{sdj_docno}, #{SDJS_IN_TM}, #{SDJS_IN_S}, #{SDJS_IN_WL_YN}, #{SDJS_IN_CMNT}, #{SDJS_OUT_TM}, #{SDJS_OUT_S}, #{SDJS_OUT_WL_YN}, #{SDJS_OUT_CMNT}, 'N', SYSDATE, 'insertSDJ_Sj', #{USERID})
+	</update>
+	
+	<update id="updateSDJS_Ss_Cmnt" parameterType="java.util.Map">
+	MERGE INTO SY_DAILY_JNL_SJ
+            USING DUAL
+           ON (SDJS_DOCNO =  #{sdj_docno})
+            WHEN MATCHED THEN
+                      UPDATE SET
+                              SDJS_SS_CMNT = #{SDJS_SS_CMNT},
+                              CMN_UPD_DATE = SYSDATE,
+                              CMN_UPD_PROG = 'updateSDJS_Ss_Cmnt',
+                              CMN_UPD_ID = #{USERID}
+            WHEN NOT MATCHED THEN             
+	INSERT (SDJS_DOCNO, SDJS_SS_CMNT, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID) 
+	VALUES (#{sdj_docno}, #{SDJS_SS_CMNT}, 'N', SYSDATE, 'insertSDJS_Ss_Cmnt', #{USERID})
+	</update>
+	
+	<update id="updateSDJS_Sc_Cmnt" parameterType="java.util.Map">
+	MERGE INTO SY_DAILY_JNL_SJ
+            USING DUAL
+           ON (SDJS_DOCNO =  #{sdj_docno})
+            WHEN MATCHED THEN
+                      UPDATE SET
+                              SDJS_SC_CMNT = #{SDJS_SC_CMNT},
+                              CMN_UPD_DATE = SYSDATE,
+                              CMN_UPD_PROG = 'updateSDJS_Sc_Cmnt',
+                              CMN_UPD_ID = #{USERID}
+            WHEN NOT MATCHED THEN             
+	INSERT (SDJS_DOCNO, SDJS_SC_CMNT, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID) 
+	VALUES (#{sdj_docno}, #{SDJS_SC_CMNT}, 'N', SYSDATE, 'insertSDJS_Sc_Cmnt', #{USERID})
+	</update>
+	
+	<!-- 동물생태점검 -->
+	<select id="selectJnl02_SP" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT Rownum as rnum, fn_getComCode_Cls3Name(100, 1013, SDJ02SP_BZCLS3) as SDJ02SP_BZCLS3 ,MAC_NAME, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as MAI_GENDER ,
+	SDJ02SP_ANICODE, SDJ02SP_ORGCMNT, SDJ02SP_PROCCMNT, MAI_BNAME
+  	FROM SY_DAILY_JNL02_SP, MF_ANI_INFO, MF_ANI_CLS
+  	WHERE SDJ02SP_DocNo = #{sdj_docno}
+  	AND MAC_ANICLSCODE = MAI_ANICLSCODE
+  	AND SDJ02SP_ANICODE = MAI_ANICODE
+	</select>
+	<!--  -->
+	
+	<!-- 위탁관리 동물현황 -->
+	<select id="selctSDJ02_AE" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT SDJ02AE_BZCLS1, SDJ02AE_BZCLS2, MAC_NAME,MAI_ANICODE ,SDJ02AE_ANICODE, SDJ02AE_WK, SDJ02AE_BB, SDJ02AE_CS, SDJ02AE_UD,SDJ02AE_WS,SDJ02AE_HH, SDJ02AE_INSPREQ, SDJ02AE_CMNT
+	FROM SY_DAILY_JNL02_AE, MF_ANI_INFO, MF_ANI_CLS
+	WHERE SDJ02AE_DOCNO = #{sdj_docno}
+	AND MAC_ANICLSCODE = MAI_ANICLSCODE
+	AND MAI_ANICODE = SDJ02AE_ANICODE
+	</select>
+	
+	<!-- 체험 학습용 동물현황 -->
+	<select id="selctJNL01_CH" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT Rownum as RNUM, SDJ01C_DOCNO, SDJ01C_BZCLS1, SDJ01C_ANICODE, SDJ01C_ANINAME, SDJ01C_ANICNT, SDJ01C_PMRESN, SDJ01C_ACTCMNT, SDJ01C_CMNT
+	FROM SY_DAILY_JNL01_CH
+	WHERE SDJ01C_DOCNO = #{sdj_docno}
+	</select>
+	
+	<!-- 동물현황 특이사항 -->
+	<update id="updateSDJ01_Cmnt" parameterType="java.util.Map">
+	 MERGE INTO SY_DAILY_JNL01
+            USING DUAL
+            ON (SDJ01_DocNo =#{sdj_docno})
+            WHEN MATCHED THEN
+                      UPDATE SET
+                            SDJ01_CMNT =  #{SDJ01_CMNT},
+                           CMN_UPD_ID =  #{USERID}, 
+                           CMN_UPD_PROG = 'updateSDJ01_Cmnt',
+                           CMN_UPD_DATE = SYSDATE
+            WHEN NOT MATCHED THEN             
+	INSERT (SDJ01_DocNo, SDJ01_BZCls1, SDJ01_CMNT, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID) 
+	VALUES (#{sdj_docno}, 'SY001', #{SDJ01_CMNT}, 'N', SYSDATE, 'insertSDJ01_Cmnt', #{USERID})
+	</update>
+	
+	<!-- 사육관리 -->
+	<!-- 사료관리(종별) -->
+	<select id="selectSDJ03_Species" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT MAC_ANICLSCODE, MAC_NAME
+    from MF_ANI_INFO, MF_ANI_CLS
+    WHERE MAI_ANICLSCODE = MAC_ANICLSCODE  
+    AND MAI_VVRMNO = #{mai_vvrmno}
+    AND MF_ANI_INFO.CMN_DEL_STS='N'
+    <if test="layer03_sch != ''">
+   	AND MAC_NAME LIKE '%' || #{layer03_sch} || '%'
+    </if>  
+    GROUP BY MAC_ANICLSCODE, MAC_NAME
+  	</select>
+  	
+  	<!-- 사료관리(개별) -->
+	<select id="selectSDJ03_aniList" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT Rownum as RNUM, MAC_NAME, MAI_ANICODE, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as MAI_GENDER, MAI_BNAME
+    FROM MF_ANI_INFO, MF_ANI_CLS
+    WHERE MAI_ANICLSCODE = MAC_ANICLSCODE  
+    AND MF_ANI_INFO.CMN_DEL_STS='N'
+    <if test="layer04_sch != ''">
+   	AND MAC_NAME LIKE '%' || #{layer04_sch} || '%'
+    </if>  
+    AND MAI_VVRMNO = #{mai_vvrmno}
+  	</select>
+  	<!-- Select 동물사육관리 , 위생 및 방역관리  -->
+  	<select id="getSDJ02_AniPrv" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+  	SELECT SDJ02_ANICMNT, SDJ02_PRVCMNT 
+  	FROM SY_DAILY_JNL02
+  	WHERE SDJ02_DOCNO= #{sdj_docno}
+  	</select>
+	
+	<!-- Select 안전교육 등 관리 , 기타  -->
+	<select id="getSDJ_SafeEtc_CMNT" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	 SELECT SDJ_SAFE_EDU, SDJ_SAFE_ETC
+	 FROM SY_DAILY_JNL
+	 WHERE SDJ_DOCNO= #{sdj_docno}
+  	</select>
+  	
+  	<!-- 동물사육관리 수정 -->
+  	<update id="updateSDJ02_AniCmnt" parameterType="java.util.Map">
+  	MERGE INTO SY_DAILY_JNL02
+            USING DUAL
+            ON (SDJ02_DOCNO =  #{sdj_docno})
+            WHEN MATCHED THEN
+                      UPDATE SET
+                            SDJ02_ANICMNT =   #{SDJ02_ANICMNT},
+                           CMN_UPD_ID =    #{USERID},
+                           CMN_UPD_DATE = SYSDATE,
+                           CMN_UPD_PROG = 'updateSDJ02_AniCmnt' 
+            WHEN NOT MATCHED THEN             
+	INSERT  (SDJ02_DocNo, SDJ02_BZCls1, SDJ02_AniCmnt, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID) 
+	VALUES ( #{sdj_docno} , 'SY002', #{SDJ02_ANICMNT}, 'N', SYSDATE, 'insertSDJ02_AniCmnt', #{USERID})
+	</update>
+  	
+  	<!-- 안전교육 등 관리 수정 -->
+	<update id="updateSDJ_SafeEdu" parameterType="java.util.Map">
+	MERGE INTO SY_DAILY_JNL
+            USING DUAL
+            ON (SDJ_DOCNO =  #{sdj_docno})
+            WHEN MATCHED THEN
+                      UPDATE SET
+                            SDJ_SAFE_EDU =   #{SDJ_SAFE_EDU},
+                           CMN_UPD_ID =    #{USERID},
+                           CMN_UPD_DATE = SYSDATE,
+                           CMN_UPD_PROG = 'updateSDJ_SafeEdu' 
+            WHEN NOT MATCHED THEN             
+	INSERT (SDJ_DOCNO, SDJ_SAFE_EDU, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID) 
+	VALUES (#{sdj_docno}, #{SDJ_SAFE_EDU} ,'N', SYSDATE, 'insertSDJ_SafeEdu', #{USERID})
+	</update>
+	
+	<!-- 기타 수정 -->
+	<update id="updateSDJ_Etc" parameterType="java.util.Map">
+	MERGE INTO SY_DAILY_JNL
+            USING DUAL
+            ON (SDJ_DOCNO =  #{sdj_docno})
+            WHEN MATCHED THEN
+                      UPDATE SET
+                            SDJ_SAFE_ETC =   #{SDJ_SAFE_ETC},
+                           CMN_UPD_ID =    #{USERID},
+                           CMN_UPD_DATE = SYSDATE,
+                           CMN_UPD_PROG = 'updateSDJ_Etc' 
+            WHEN NOT MATCHED THEN             
+	INSERT (SDJ_DOCNO, SDJ_SAFE_ETC, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID) 
+	VALUES (#{sdj_docno}, #{SDJ_SAFE_ETC} ,'N', SYSDATE, 'insertSDJ_Etc', #{USERID})
+	</update>
+	
+	<!-- 위생 및 방역관리 수정 -->
+	<update id="updateSDJ02_Prvcmnt" parameterType="java.util.Map">
+	MERGE INTO SY_DAILY_JNL02
+            USING DUAL
+            ON (SDJ02_DOCNO =  #{sdj_docno})
+            WHEN MATCHED THEN
+                      UPDATE SET
+                            SDJ02_PrvCmnt =   #{SDJ02_PRVCMNT},
+                           CMN_UPD_ID =    #{USERID},
+                           CMN_UPD_DATE = SYSDATE,
+                           CMN_UPD_PROG = 'updateSDJ02_Prvcmnt' 
+            WHEN NOT MATCHED THEN             
+	INSERT (SDJ02_DocNo, SDJ02_BZCls1, SDJ02_PrvCmnt,  CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID) 
+	VALUES (#{sdj_docno} , 'SY002', #{SDJ02_PRVCMNT} ,'N', SYSDATE, 'insertSDJ02_Prvcmnt', #{USERID})
+	</update>
+	<!-- 사육관리 -->
+  	
+	
+	<update id="updateSDJ_Dicmnt" parameterType="java.util.Map">
+	 MERGE INTO DT_ANI_IO
+            USING DUAL
+            ON (DAIO_ANICODE =  #{DAIO_ANICODE},
+            (DAIO_IOType = '2' and DAIO_Resn = '8') or 
+            (DAIO_IOType = '1' and DAIO_Resn = '6'))
+            WHEN MATCHED THEN
+                      UPDATE SET
+                            DAIO_CMNT = #{DAIO_CMNT},
+                            CMN_UPD_ID = #{USERID},
+                            CMN_UPD_PROG ='updateSDJ_Dicmnt',
+                            CMN_UPD_DATE = SYSDATE
+            WHEN NOT MATCHED THEN             
+	INSERT (DAIO_CMNT CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID) 
+	VALUES (#{DAIO_CMNT},'N', SYSDATE, 'insertSDJ_Dicmnt',#{USERID})
+	</update>
+	
+	<!-- 이환동물 팝업-->
+	<select id="selectAE_popup" resultType="java.util.LinkedHashMap"  parameterType="hashmap">
+	 SELECT Rownum as RNUM, FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '1') || '(' || MAC_ANICODE1 || ')' AS CLS1_NAME, MAC_NAME, MAI_ANICODE, 
+     fn_getComCode_Cls3Name(200, 202, MAI_Sex) as MAI_GENDER, MAI_BNAME
+     FROM MF_VVRM_INFO, MF_ANI_INFO, MF_ANI_CLS
+    WHERE MAI_VVRMNO = MVI_VVRMNO
+    AND MAI_ANICLSCODE = MAC_ANICLSCODE  
+    AND MVI_VVRMNO = #{mai_vvrmno}
+    AND MF_ANI_INFO.CMN_DEL_STS='N'
+	</select>
+	
+	<select id="selectSydailyCh" resultType="java.util.LinkedHashMap"  parameterType="hashmap">
+	select MAC_NAME, MAI_ANICODE, MAI_BNAME
+	from mf_ani_cls, mf_ani_info
+	where mai_anicode= #{MAI_ANICODE}
+	AND mac_aniclscode = mai_aniclscode
+	</select>
+	
+</mapper>

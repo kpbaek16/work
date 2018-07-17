@@ -1,0 +1,156 @@
+@charset "utf-8";
+/* CSS Document */
+
+html, body, div, span, applet, object, iframe,h1, h2, h3, h4, h5, h6, p, blockquote, pre,a, abbr, acronym, address, big, cite, code,del, dfn, em, img, ins, kbd, q, s, samp,small, strike, strong, sub, sup, tt, var,b, u, i, center,dl, dt, dd, ol, ul, li,fieldset, form, label, legend,table, caption, tbody, tfoot, thead, tr, th, td,article, aside, canvas, details, embed, figure, figcaption, footer, header, hgroup, menu, nav, output, ruby, section, summary,time, mark, audio, video 
+{margin: 0; padding: 0; border: 0; font-size: 100%; font: inherit; vertical-align: baseline;}
+
+
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, section { display: block;}
+body { line-height: 1;}
+ol, ul{ list-style: none;}
+blockquote, q { quotes: none;}
+blockquote:before, blockquote:after,q:before, q:after { content: ''; content: none;}
+table { border-collapse: collapse; border-spacing: 0;}
+
+
+/*기본설정*/
+h1,h2,h3,h4,h5,h6{
+	width:1px; height:1px; font-size:0px; line-height:0px; position:absolute; left:0px; top:0px;
+}
+a:link{	color:#000; text-decoration:none;}
+a:visited{ color:#000; text-decoration:none;}
+html,body{height:100%;}
+
+
+
+.accessibility li a{width:1px; height:1px; font-size:0px; line-height:0px; position:absolute; left:0px; top:0px;}
+.accessibility li a:focus{
+	width:100%; height:30px; font-size:0.75em; font-weight:bold; text-align:center; line-height:30px; background:#000; color:#fff; z-index:1000;
+}
+
+html,body{width:100%; height:100%;}
+body{background:#ffffff;}
+
+/* sub_UI layout */
+#sub_wrap{position:relative; width:100%; margin:0 auto;}
+#header_wrap{position:relative; z-index:1; width:100%; height:60px; background:#dc662e; margin:0 auto;}
+#container{position:relative; height:auto; width:800px; margin:0 auto;}
+#contents{width:800px; margin:0px;display:inline-block; min-height:850px; background:url('../../images/sub_bg.gif') 0 0 repeat-y; padding-bottom:50px;}
+#contents_admin{width:800px; margin:0px;display:inline-block; min-height:850px; background:url('../../images/main_bg.gif') 0 0 repeat-y; padding-bottom:50px;}
+#lnb_area{float:left; width:180px; margin-right:20px;}
+#contents_area{float:right;width:800px; margin-right:10px; }
+#footer_wrap{position:relative; width:100%; height:100px; background:#484848; margin:0 auto;}
+#footer{width:800px; height:100px; margin:0 auto; margin-top:-3px;}
+
+/* contents_title */
+.title_area{width:800px; height:50px; }
+.contents_title{width:800px; height:75px; font:bold 16px/100px "MalgunGothic"; color:#dc662e; }
+.location{width:800px; height:40px; background:#f5f5f5; padding-right:10px; text-indent:10px; }
+.location li{float:left; font:normal 12px/40px "MalgunGothic"; color:#757575; margin-right:3px;}
+
+.contents_table{width:800px;}
+
+/*시스템관리*/
+.table_title_box{height:34px; padding:2px 0; }
+.table_title{height:20px; font:bold 14px/20px "MalgunGothic"; color:#555; }
+.table_title img{vertical-align:text-bottom; margin-right:8px;}
+.sys_btn_box{float:right;}
+.align_right,.sys_btn_area,.sys_btn_area2,.sys_btn_area3{text-align:right;}
+.table_remove{display:none;}
+.table_title_text{font:bold 14px "MalgunGothic"; color:#555;}
+
+
+/*base_anigroup*/
+/*조회*/
+.search_table{position:relative; width:800px;border:solid 1px #d0d0d0; box-sizing:border-box;font:normal 12px "MalgunGothic";color:#757575;  }
+.search_table th{font-weight:bold; width:200px; text-align:left; text-indent:40px; height:40px; line-height:40px;}
+.search_table td{line-height:40px;}
+.search_radio{width:13px;height:13px; margin:2px 5px 2px 0; padding:0; vertical-align:middle}
+.textfield{ width:90%; padding:3px 4px;border:1px solid #b0b0b0;background:#fff;font:normal 12px "MalgunGothic";color:#757575;}
+.search_table th.search_btn_area{border-top:1px solid #d0d0d0; background:#f5f5f5; line-height:40px;text-align:center; }
+.search_btn_area a{text-indent:0;}
+.tablebg{border-top:1px solid #d0d0d0; background:#f5f5f5;}
+/*상세정보표*/
+.ani_info_box{position:relative; float:right; width:380px; height:700px; }
+.ani_info{width:380px; border:solid 1px #d0d0d0; box-sizing:border-box; }
+.infobase{position:absolute; top:0px; left:0px;}
+.infobase01{position:absolute; top:0px; left:0px;}
+.infoadd{position:absolute; top:0px; left:0px;}
+.infotable{position:absolute; top:0px; left:0px;}
+.infotable01{position:absolute; top:0px; left:0px;}
+.ani_info thead th{height:38px;border-bottom:1px solid #d0d0d0; background:#f5f5f5; text-align:left; font:bold 14px/38px "MalgunGothic"; color:#555; }
+.ani_info td{height:38px; padding:0 10px; border:0;font:normal 12px/38px "MalgunGothic"; color:#757575; background:#fff;}
+.ani_info th{border-right:1px solid #d0d0d0; border-bottom:1px solid #d0d0d0;background:#f5f5f5;font:bold 12px/38px "MalgunGothic"; color:#555; }
+.ani_info tbody td{border-bottom:1px solid #d0d0d0;border-right:1px solid #d0d0d0;}
+.info_title{padding-left:24px;display:inline-block;}
+.info_text{position:relative; width:98%;border:1px solid #b0b0b0;background:#fff; box-sizing:border-box;padding:4px; font:normal 12px"MalgunGothic"; color:#757575;}
+.info_text_s{position:relative; width:40%;border:1px solid #b0b0b0;background:#fff; box-sizing:border-box;padding:4px;}
+
+/*base_aniinfo*/
+.aniinfo_search_box{width:800px;}
+.aniinfo_search{width:100%; border:solid 1px #d0d0d0; box-sizing:border-box;}
+.aniinfo_search td{height:38px; padding-left:10px; border:0;font:normal 12px/38px "MalgunGothic"; color:#757575; background:#fff;}
+.aniinfo_search th{text-align: center;border-right:1px solid #d0d0d0; border-bottom:1px solid #d0d0d0;background:#f5f5f5;font:bold 12px/38px "MalgunGothic"; color:#555; }
+.aniinfo_search tbody td{border-bottom:1px solid #d0d0d0;border-right:1px solid #d0d0d0;}
+.aniinfo_search tfoot td{border-right:1px solid #d0d0d0; background:#e5e5e5;}
+.aniinfo_add_box{width:800px;}
+.aniinfo_add{position:relative;width:100%; border:solid 1px #d0d0d0; box-sizing:border-box;}
+.aniinfo_add thead th{height:38px;border-bottom:1px solid #d0d0d0; background:#f5f5f5; font:bold 12px/38px "MalgunGothic"; color:#555; }
+.aniinfo_add td{height:38px; border-bottom:1px solid #d0d0d0;border-right:1px solid #d0d0d0; font:normal 12px/38px "MalgunGothic"; color:#757575; background:#fff;text-align:center;}
+.aniinfo_add th{text-align: center;border-right:1px solid #d0d0d0; border-bottom:1px solid #d0d0d0;background:#f5f5f5;font:bold 12px/38px "MalgunGothic"; color:#555; }
+.aniinfo_add tfoot td{background:#f5f5f5;}
+.table_td_margin tbody tr .text_margin{}
+.table_td_margin tbody tr td{vertical-align:middle;line-height:15px; padding:3px 3px;}
+
+.search_radio{ margin:0px 5px 3px 5px;vertical-align: middle; }
+label .type1{margin-left:0;}
+.calendar1,.calendar2{width:150px;background:url('../../images/cal_icon.gif') 137px 3px no-repeat;border:1px solid #b0b0b0; padding:4px; font:normal 12px; color:#757575;}
+#del_chk{margin-left:-1px}
+.info_add_btn{display:inline-block; margin-left:940px; margin-bottom:5px; width:50px; height:26px; border:solid 1px #0b6691; border-radius:13px; box-sizing:border-box; background:#0d82b9; color:#fff !important;font:bold 12px/26px "MalgunGothic";text-align:center;}
+.aniinfo_name{height:30px;}
+.btn_area_bottom{display:inline-block; position:relative; width:100%; left:50%; margin-left:-50%; text-align:center; margin-top:30px;}
+.textfield2{width:77%; padding:3px 4px;border:1px solid #b0b0b0;background:#fff;font:normal 12px "MalgunGothic";color:#757575;}
+.table_view_btn{display:inline-block; position:relative; float:right; margin-right:10px;margin-top:5px; width:50px; height:26px; border:solid 1px #9f9f9f; border-radius:13px; box-sizing:border-box; background:#dedede; color:#404040 !important;font:bold 12px/26px "MalgunGothic";text-align:center;}
+.calendar3{width:190px;background:url('../../images/cal_icon.gif') 177px 3px no-repeat;border:1px solid #b0b0b0; padding:4px; font:normal 12px; color:#757575;}
+.table_view3,.table_remove3{margin-bottom:10px;}
+.popup_th{text-align:right; padding-right:10px;}
+.aniinfo_search thead th img{display:block; width:100%; height:100%;}
+.aniinfo_search textarea{ text-align:center; padding:4px; border:0; text-align:left; margin-top:5px;font:normal 12px "MalgunGothic";color:#757575;}
+.td_btn_box{text-align:center;}
+.aniinfo_add tbody td.text_left{text-align:left; padding-left:15px;}
+label .type2{text-align:center;}
+.deptinfo_position{position:relative;display:inline-block;}
+.plan_box{display:inline-block; width:980px; height:100px; }
+.plan_text{width:100%; height:100px;border:1px solid #d0d0d0;background:#fff; color:#757575 !important;font:normal 12px/26px "MalgunGothic"; padding:5px; }
+textarea{font:normal 12px/26px "MalgunGothic";color:#757575;  }
+.aniinfo_search tbody td.img_td{margin:0; padding:0; height:100px;}
+.img_td img{display:block; height:100%; margin-left:auto; margin-right:auto;}
+.aniinfo_search tbody tr.text_center td, .aniinfo_search tfoot tr.text_center td{padding:0; margin:0; text-align:center;}
+.aniinfo_search th.bg_gray,.aniinfo_search td.bg_gray{background:#e5e5e5;}
+input[type=checkbox] {vertical-align: middle; margin:0px 3px 3px 3px;}
+
+/* search_area */
+.search_area {overflow:hidden;}
+.search_area .right {float:right;}
+.search_area .search_box .sel_box1 select {vertical-align:middle; border:1px solid #d0d0d0; height:30px;}
+.search_area .search_box input[type=text] {height:26px; vertical-align:middle; border:1px solid #d0d0d0;}
+.search_area .search_box .btn_search {display:inline-block; width:50px; height:26px; line-height:26px; border:solid 1px #555; border-radius:13px; box-sizing:border-box; background:#757575; color:#fff; !important;font:bold 12px/26px "MalgunGothic"; text-align:center; }
+
+.search_list{position:relative;width:100%;}
+.search_list thead th{height:44px; box-sizing:border-box; border-top:2px solid #bbb; border-bottom:1px solid #d0d0d0; background:#f5f5f5; font:bold 12px/44px "MalgunGothic"; color:#444; }
+.search_list tbody th{background:#fff; font:normal 12px/40px "MalgunGothic";  color:#606060;}
+.search_list td{height:40px; border-bottom:1px solid #d0d0d0; font:normal 12px/40px "MalgunGothic"; color:#606060; background:#fff;text-align:center;}
+
+.search_list th{border-bottom:1px solid #d0d0d0;background:#f5f5f5;font:bold 12px/40px "MalgunGothic"; }
+.search_list tbody td.text_left{text-align:left; padding-left:20px; font-weight:bold;}
+.text_left a{color:#606060;}
+.text_left a:hover{font-weight:bold; color:#dc662e;}
+
+.allsearch_box{width:100%; margin-top:40px; }
+.allsearch_list{border-top:solid 2px #b0b0b0;}
+.allsearch_list li{font:normal 12px "MalgunGothic";color:#757575; padding:20px; border-bottom:solid 1px #d0d0d0;}
+.sear_title{font-weight:bold; color:#555; font-size:14px;padding-right:10px;}
+.sear_title2{font-size:14px; color:#555;}
+.sear_date{float:right;margin-right:10px;}
+.allsearch_list li p{margin-top:10px;}

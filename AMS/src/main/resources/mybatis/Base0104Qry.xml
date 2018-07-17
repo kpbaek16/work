@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Base0104">
+
+	<select id="selectDeptList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT MDI_LINKNO, MDI_DPTNAME, CMN_DEL_STS, CMN_MAK_ID, CMN_MAK_DATE
+		FROM MF_DPT_INFO
+		WHERE CMN_DEL_STS = 'N'
+		<if test="schType=='dept' and schKeyword != ''">
+		AND MDI_DPTNAME LIKE '%' || #{schKeyword} || '%'
+		</if>
+		ORDER BY MDI_LINKNO	
+	</select>
+	<select id="selectTeamList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT A.MTI_TEAMNO, A.MTI_TEAMNAME, A.MTI_DPTNO,
+		       B.MDI_LINKNO, B.MDI_DPTNAME
+		FROM   MF_DPT_INFO B, MF_TEAM_INFO A
+		WHERE   A.MTI_DPTNO = B.MDI_LINKNO
+		AND A.CMN_DEL_STS = 'N'
+		<if test="dptno != ''">
+        AND A.MTI_DPTNO = #{dptno}
+		</if>
+		<if test="schType=='team' and schKeyword != ''">
+		AND A.MTI_TEAMNAME LIKE '%' || #{schKeyword} || '%'
+		</if>
+		ORDER BY A.MTI_TEAMNO, B.MDI_LINKNO
+	</select>
+	<select id="selectUserList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT A.MUI_ID,
+		       A.MUI_TEAMNO,
+		       A.MUI_NAME,
+		       A.MUI_DPTLVLCODE,
+		       A.MUI_DPTLVLNAME,
+		       A.MUI_DPTPOSITCODE,
+		       A.MUI_DPTPOSITNAME,
+		       A.MUI_OFFCTELNO,
+		       A.MUI_JCCODE,
+		       A.MUI_HPTELNO,
+		       A.MUI_LINCNO,
+		       A.MUI_MAINBIZ,
+		       A.MUI_LGKEYSET,
+		       A.CMN_DEL_STS,
+		       A.CMN_MAK_DATE,
+		       A.CMN_MAK_PROG,
+		       A.CMN_MAK_ID,
+		       A.CMN_UPD_DATE,
+		       A.CMN_UPD_PROG,
+		       A.CMN_UPD_ID
+		FROM   MF_USER_INFO A
+		WHERE  A.CMN_DEL_STS = 'N'
+		<if test="team_no != ''">
+		AND A.MUI_TEAMNO =  #{team_no}
+		</if>
+		<if test="schType=='name' and schKeyword != ''">
+		AND A.MUI_NAME LIKE '%' || #{schKeyword} || '%'
+		</if>
+		ORDER BY MUI_JCCODE ASC
+	</select>
+	
+	<select id="selectUserInfo" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT A.* 
+		FROM
+		(
+			SELECT A.* 
+                    ,(SELECT MDI_DPTNAME FROM MF_DPT_INFO
+                     WHERE MDI_LINKNO = A.MTI_DPTNO) MDI_DPTNAME
+                    ,(SELECT MTI_TEAMNAME FROM MF_TEAM_INFO
+                     WHERE MTI_TEAMNO = A.MUI_TEAMNO) MTI_TEAMNAME
+		            ,(SELECT MAG_GRPCODE FROM MF_AUTH_GRP
+		             WHERE MAG_ID = A.MUI_ID) MAG_GRPCODE
+		            ,A.MSU_USERID || ' (' || A.MUI_ID || ')' AS TXT_ID
+			FROM 
+			(
+	             SELECT 
+	                UI.MUI_ID, UI.MUI_TEAMNO, UI.MUI_NAME, UI.MUI_DPTLVLCODE,
+	                UI.MUI_DPTLVLNAME, UI.MUI_DPTPOSITCODE, UI.MUI_DPTPOSITNAME, UI.MUI_OFFCTELNO, 
+	                UI.MUI_JCCODE, fn_getComCode_Cls3Name('100','100',UI.MUI_JCCode) AS TXT_MUI_JCCODE,
+	                UI.MUI_HPTELNO, UI.MUI_LINCNO, UI.MUI_MAINBIZ, UI.MUI_LGKEYSET,
+	                SU.MSU_USERID, SU.MSU_ID, SU.MSU_PWD, 
+	                SU.MSU_PMSLVL, SU.MSU_APRV_YN, SU.CMN_DEL_STS, 
+	                SU.CMN_MAK_DATE, SU.CMN_MAK_PROG, SU.CMN_MAK_ID, 
+	                SU.CMN_UPD_DATE, SU.CMN_UPD_PROG, SU.CMN_UPD_ID
+                    ,(SELECT MTI_DPTNO FROM MF_TEAM_INFO
+                     WHERE MTI_TEAMNO = UI.MUI_TEAMNO) MTI_DPTNO
+	             FROM MF_USER_INFO UI, MF_SYS_USER SU
+	             WHERE UI.MUI_ID = SU.MSU_ID(+)
+	      		 AND UI.MUI_ID =  #{mui_id}
+			)  A
+		) A
+	</select>
+	
+	<update id="createAuthGrpInfo" parameterType="hashmap">
+	    MERGE INTO MF_AUTH_GRP T
+        USING (
+            SELECT #{mag_id} AS MAG_ID, #{mag_grpcode} AS MAG_GRPCODE
+            FROM  DUAL
+        ) S
+        ON
+        (
+            T.MAG_ID = S.MAG_ID
+         )
+        WHEN MATCHED
+        THEN
+            UPDATE SET MAG_GRPCODE = #{mag_grpcode}
+                , CMN_UPD_PROG = 'saveUser'
+                , CMN_UPD_ID = #{ss_userid}
+                , CMN_UPD_DATE = SYSDATE
+        WHEN NOT MATCHED
+        THEN
+            INSERT (
+                  MAG_ID, MAG_GRPCODE, MAG_ST_DAY, MAG_ED_DAY
+                , CMN_DEL_STS, CMN_MAK_ID, CMN_MAK_DATE)
+            VALUES (S.MAG_ID,S.MAG_GRPCODE, TO_CHAR(SYSDATE,'YYYYMMDD'), '99991231'
+                ,'N',#{ss_userid},SYSDATE)
+	</update>
+
+	<update id="updateUserInfo" parameterType="hashmap">
+            UPDATE MF_USER_INFO
+            SET    MUI_TEAMNO       = #{mui_teamno},
+            	   MUI_JCCODE       = #{mui_jccode},
+            	   MUI_HPTELNO      = #{mui_hptelno},
+            	   MUI_LINCNO       = #{mui_lincno},
+            	   MUI_MAINBIZ      = #{mui_mainbiz},
+                   CMN_UPD_DATE     = SYSDATE,
+                   CMN_UPD_PROG     = 'updateUserInfo',
+                   CMN_UPD_ID       = #{ss_userid}
+            WHERE  MUI_ID           = #{mui_id}
+	</update>
+            	
+	<delete id="deleteAuthGrpInfo" parameterType="hashmap">
+		DELETE FROM MF_AUTH_GRP
+		WHERE MAG_ID = #{mag_id}
+	</delete>
+	
+	<delete id="deleteUserPms" parameterType="hashmap">
+		DELETE FROM MF_USER_PMS A
+		WHERE MUP_USERID = #{mag_id}
+		AND EXISTS (
+		    SELECT 1 FROM MF_COMM_CODE
+		    WHERE MCC_L_CODE = 'MENU01'
+		    AND A.MUP_PROGID = MCC_S_CODE
+		)
+	</delete>
+	
+	<insert id="insertUserPms" parameterType="hashmap">
+	    INSERT INTO MF_USER_PMS (
+	        MUP_USERID, MUP_PROGID, 
+	        MUP_UPDLVL, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID
+	    )    
+	    SELECT #{mag_id}, MCC_S_CODE, '1' MUP_UPDLVL, 'N', SYSDATE, 'insertUserPms', #{ss_userid}
+	    FROM
+	    (
+	        SELECT MCC_S_CODE, 'AM' GRPCODE
+	        FROM MF_COMM_CODE
+	        WHERE MCC_L_CODE = 'MENU01'
+	        AND MCC_S_CODE IN ('0106','0107')
+	        UNION ALL
+	        SELECT MCC_S_CODE, 'HW' GRPCODE
+	        FROM MF_COMM_CODE
+	        WHERE MCC_L_CODE = 'MENU01'
+	        AND MCC_S_CODE IN ('0201','0202')    
+	        UNION ALL
+	        SELECT MCC_S_CODE, 'SW' GRPCODE
+	        FROM MF_COMM_CODE
+	        WHERE MCC_L_CODE = 'MENU01'
+	        AND MCC_S_CODE IN ('0107','0201','0202')
+	        UNION ALL
+	        SELECT MCC_S_CODE, 'SM' GRPCODE
+	        FROM MF_COMM_CODE
+	        WHERE MCC_L_CODE = 'MENU01'
+	        AND MCC_S_CODE IN ('0105','0107','0201','0202')
+	        UNION ALL
+	        SELECT MCC_S_CODE, 'JW' GRPCODE
+	        FROM MF_COMM_CODE
+	        WHERE MCC_L_CODE = 'MENU01'
+	        AND MCC_S_CODE IN ('0106','0107','0108','0109','0110','0111','0201','0202','0303','0401','0402','0403','0404','0405','0502','0503','0701','0702')
+	        UNION ALL
+	        SELECT MCC_S_CODE, 'BW' GRPCODE
+	        FROM MF_COMM_CODE
+	        WHERE MCC_L_CODE = 'MENU01'
+	        AND MCC_S_CODE IN ('0108','0109','0110','0201','0202','0401','0403','0404','0501','0502','0503')
+	        UNION ALL
+	        SELECT MCC_S_CODE, 'MM' GRPCODE
+	        FROM MF_COMM_CODE
+	        WHERE MCC_L_CODE = 'MENU01'
+	        AND MCC_S_CODE IN ('0201','0202')
+            UNION ALL
+            SELECT MCC_S_CODE, 'MU' GRPCODE
+            FROM MF_COMM_CODE
+            WHERE MCC_L_CODE = 'MENU01'
+            AND MCC_S_CODE IN ('0201','0202')
+	    ) 
+	    WHERE GRPCODE=#{mag_grpcode}
+	</insert>
+	
+	
+	<select id="selectUserKjpList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT A.* 
+            ,(SELECT MCC_S_NAME FROM MF_COMM_CODE
+              WHERE MCC_L_CODE = '100' AND MCC_M_CODE = '104' AND MCC_S_CODE = A.MUK_RCVTYPE) AS MCC_S_NAME
+		    ,(SELECT MDI_DPTNAME FROM MF_DPT_INFO
+		      WHERE MDI_LINKNO = A.MTI_DPTNO) AS MDI_DPTNAME
+            ,FN_GETCOMCODE_CLS3NAME ('100', '100', MUI_JCCODE) TXT_MUI_JCCODE
+		FROM (
+		    SELECT A.* 
+		    FROM (
+		        SELECT A.MUK_KJID,
+		               A.MUK_RCVTYPE,
+		               A.MUK_KJSEQ,
+		               A.CMN_DEL_STS,
+		               B.MUI_ID,
+		               B.MUI_TEAMNO,
+		               B.MUI_DPTLVLNAME,
+		               B.MUI_DPTLVLCODE,
+		               B.MUI_DPTPOSITCODE,
+		               B.MUI_DPTPOSITNAME,
+		               B.MUI_NAME,
+		               B.MUI_LINCNO,
+		               B.MUI_JCCODE,
+		               (SELECT MTI_DPTNO FROM MF_TEAM_INFO
+		                WHERE MTI_TEAMNO = B.MUI_TEAMNO) AS MTI_DPTNO
+		        FROM   MF_USER_KJP A, MF_USER_INFO B
+		        WHERE  A.MUK_USERID = B.MUI_ID
+		        AND A.CMN_DEL_STS = 'N'
+		<if test="sch_teamno != ''">
+		        AND B.MUI_TEAMNO = #{sch_teamno}
+		</if>
+		<if test="sch_mui_id != ''">
+		        AND B.MUI_ID = #{sch_mui_id}
+		</if>
+		    )  A
+		<if test="sch_dptno != ''">
+            WHERE MTI_DPTNO = #{sch_dptno}
+		</if>
+		    ORDER BY   A.MUK_RCVTYPE ASC, A.MUK_KJSEQ ASC
+		)  A
+	</select>
+
+
+	<select id="selectUserRcvTypeList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+    SELECT A.* 
+        ,(SELECT MDI_DPTNAME FROM MF_DPT_INFO
+          WHERE MDI_LINKNO = A.MTI_DPTNO) AS MDI_DPTNAME
+    FROM (
+        SELECT MUK_USERID, MUK_KJID, MUK_RCVTYPE, MUK_KJSEQ, MUI_NAME,
+               FN_GETCOMCODE_CLS3NAME ('100', '100', MUI_JCCODE) TXT_MUI_JCCODE,
+               (SELECT MTI_DPTNO FROM MF_TEAM_INFO
+                WHERE MTI_TEAMNO = UI.MUI_TEAMNO) AS MTI_DPTNO,
+	           (SELECT MTI_TEAMNAME FROM MF_TEAM_INFO
+	            WHERE MTI_TEAMNO = UI.MUI_TEAMNO) AS MTI_TEAMNAME
+        FROM   MF_USER_KJP UK, MF_USER_INFO UI
+        WHERE  UK.MUK_KJID = UI.MUI_ID	 
+        AND UK.CMN_DEL_STS = 'N'
+        AND UK.MUK_RCVTYPE = #{muk_rcvtype} 
+        AND UK.MUK_USERID = #{muk_userid} 
+    )  A
+	</select>
+    	
+	<update id="deleteUserRcvType" parameterType="hashmap">
+		 DELETE FROM MF_USER_KJP
+		 WHERE MUK_USERID = #{muk_userid} 
+		 AND MUK_KJID = #{muk_kjid} 
+	</update>
+
+</mapper>

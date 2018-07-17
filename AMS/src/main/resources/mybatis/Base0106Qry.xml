@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Base0106">
+
+<select id="selectAniClsList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT 
+		    MAC_ANICLSCODE, MAC_ANICODE1, MAC_ANICODE2, 
+		    MAC_ANICODE3, MAC_ANICODE4_SEQ, MAC_NAME, 
+		    MAC_ENAME, MAC_SNAME, FN_GETCOMCODE_ClS3NAME('200','206',MAC_CITES) AS MAC_CITES, 
+		    FN_GETCOMCODE_ClS3NAME('200','207',MAC_ENDANG) AS MAC_ENDANG , MAC_NATMON, 
+		    FN_GETCOMCODE_ClS3NAME('200','207',MAC_RANK) AS MAC_RANK,
+		    MAC_ORGPLACE, MAC_BRDPERID, MAC_GESTPERID, 
+		    CMN_DEL_STS
+		FROM MF_ANI_CLS
+		WHERE CMN_DEL_STS = 'N'
+		AND MAC_ANICODE1 IS NOT NULL
+		<choose>
+		<when test="(clsType == 1)">
+		AND MAC_ANICODE2 = 0
+		</when>
+		<when test="(clsType == 2)">
+			<if test="mac_anicode1 != ''">
+		AND MAC_ANICODE1 = #{mac_anicode1}
+			</if>
+		AND MAC_ANICODE2 != 0 AND MAC_ANICODE3 = 0
+		</when>
+		<when test="(clsType == 3)">
+			<if test="mac_anicode1 != ''">
+		AND MAC_ANICODE1 = #{mac_anicode1}
+			</if>
+			<if test="mac_anicode2 != ''">
+		AND MAC_ANICODE2 = #{mac_anicode2} 
+			</if>
+		AND MAC_ANICODE3 != 0 AND MAC_ANICODE4_SEQ = 0
+		</when>
+		<when test="(clsType == 4)">
+			<if test="mac_anicode1 != ''">
+		AND MAC_ANICODE1 = #{mac_anicode1}
+			</if>
+			<if test="mac_anicode2 != ''">
+		AND MAC_ANICODE2 = #{mac_anicode2} 
+			</if>
+			<if test="mac_anicode3 != ''">
+		AND MAC_ANICODE3 = #{mac_anicode3} 
+			</if>
+		AND MAC_ANICODE4_SEQ != 0
+		</when>
+		</choose>
+		<if test="schKeyword != ''">
+		AND MAC_NAME LIKE '%' || #{schKeyword} || '%'
+		</if>
+		ORDER BY MAC_ANICLSCODE
+	</select>
+	
+	<select id="selectAniClsInfo" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+        SELECT  
+            FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '1') || '(' || MAC_ANICODE1 || ')' AS CLS1_NAME,
+            FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '2') || '(' || MAC_ANICODE2 || ')' AS CLS2_NAME,
+            FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '3') || '(' || MAC_ANICODE3 || ')' AS CLS3_NAME,
+            A.*
+		FROM
+		(
+			SELECT 
+			MAC_ANICLSCODE, MAC_ANICODE1, MAC_ANICODE2, 
+		    MAC_ANICODE3, MAC_ANICODE4_SEQ, MAC_NAME, 
+		    MAC_ENAME, MAC_SNAME, MAC_CITES, MAC_ENDANG , MAC_NATMON, MAC_RANK,MAC_KJJ_TYPE, MAC_ESTM_TYPE, MAC_SY_MEANLF, MAC_WY_MEANLF, MAC_GEST_MON,
+		    MAC_ORGPLACE, MAC_BRDPERID, MAC_GESTPERID, 
+		    CMN_DEL_STS
+			FROM MF_ANI_CLS
+			WHERE MAC_ANICLSCODE = #{mac_aniclscode}
+		)  A
+	</select>
+	
+	<!-- SELECT  
+            FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '1') || '(' || MAC_ANICODE1 || ')' AS CLS1_NAME,
+            FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '2') || '(' || MAC_ANICODE2 || ')' AS CLS2_NAME,
+            FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '3') || '(' || MAC_ANICODE3 || ')' AS CLS3_NAME,
+            A.*
+		FROM
+		(
+			SELECT 
+			MAC_ANICLSCODE, MAC_ANICODE1, MAC_ANICODE2, 
+		    MAC_ANICODE3, MAC_ANICODE4_SEQ, MAC_NAME, 
+		    MAC_ENAME, MAC_SNAME, FN_GETCOMCODE_ClS3NAME('200','206',MAC_CITES) AS MAC_CITES, 
+		    FN_GETCOMCODE_ClS3NAME('200','207',MAC_ENDANG) AS MAC_ENDANG , MAC_NATMON, 
+		    FN_GETCOMCODE_ClS3NAME('200','205',MAC_RANK) AS MAC_RANK,
+		    MAC_ORGPLACE, MAC_BRDPERID, MAC_GESTPERID, 
+		    MF_ANI_INFO.CMN_DEL_STS
+			FROM MF_ANI_CLS, MF_ANI_INFO
+			WHERE MAI_ANICODE = 'M11-2-1-23'
+      AND MAC_ANICLSCODE = MAI_ANICLSCODE
+		)  A; -->
+
+</mapper>

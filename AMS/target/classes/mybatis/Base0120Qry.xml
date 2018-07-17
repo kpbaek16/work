@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Base0120">
+
+	<select id="selectAuthGrpList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT A.*
+		    ,(SELECT MUI_NAME FROM MF_USER_INFO
+		      WHERE MUI_ID = A.MAG_ID) AS MUI_NAME
+		    ,FN_GETDPTNAME(MUI_TEAMNO) AS DPTNAME
+		    ,FN_GETCOMCODE_CLS3NAME('100','120',A.MAG_GRPCODE) AS TXT_MAG_GRPCODE
+            ,SUBSTR(MAG_ST_DAY,0,4) || '-' || SUBSTR(MAG_ST_DAY,5,2) || '-' || SUBSTR(MAG_ST_DAY,7,2) TXT_MAG_ST_DAY
+            ,SUBSTR(MAG_ED_DAY,0,4) || '-' || SUBSTR(MAG_ED_DAY,5,2) || '-' || SUBSTR(MAG_ED_DAY,7,2) TXT_MAG_ED_DAY
+            ,LAG(MAG_GRPCODE) OVER (ORDER BY MAG_GRPCODE, FN_GETDPTNAME(MUI_TEAMNO) ) PREV_MAG_GRPCODE
+            ,COUNT(MAG_GRPCODE) OVER (PARTITION BY MAG_GRPCODE ) CNT_MAG_GRPCODE
+		FROM
+		(
+		    SELECT MAG_ID, MAG_GRPCODE, MAG_ST_DAY, 
+		           MAG_ED_DAY, CMN_DEL_STS, CMN_MAK_DATE, 
+		           CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, 
+		           CMN_UPD_PROG, CMN_UPD_ID
+		           ,(SELECT MUI_TEAMNO FROM MF_USER_INFO
+		             WHERE MUI_ID = A.MAG_ID) AS MUI_TEAMNO
+		    FROM MF_AUTH_GRP A
+		    WHERE CMN_DEL_STS = 'N'
+            AND MAG_GRPCODE NOT IN ('SA','MU')
+		<if test="sch_grpcode != ''">
+		    AND MAG_GRPCODE = #{sch_grpcode}
+		</if>
+		) A    
+		ORDER BY MAG_GRPCODE, DPTNAME
+	</select>
+	
+	<select id="selectAuthMenuList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT A.*,
+		    LAG(MCC_M_CODE) OVER (ORDER BY MCC_M_CODE ) PREV_MCC_M_CODE,
+		    COUNT(MCC_M_CODE) OVER (PARTITION BY MCC_M_CODE ) CNT_M_CODE
+		FROM
+		(
+				SELECT A.* 
+				    ,(SELECT MUP_SRCHLVL FROM MF_USER_PMS 
+				      WHERE  A.MCC_S_CODE = MUP_PROGID
+				      AND MUP_USERID =  #{mup_userid}) MUP_SRCHLVL
+				    ,(SELECT MUP_UPDLVL FROM MF_USER_PMS 
+				      WHERE  A.MCC_S_CODE = MUP_PROGID
+				      AND MUP_USERID =  #{mup_userid}) MUP_UPDLVL
+				    ,#{mup_userid} AS MUP_USERID
+				FROM 
+				(
+				        SELECT  CC.MCC_M_CODE,
+				                CC.MCC_M_NAME,
+				                CC.MCC_S_CODE,
+			                    CC.MCC_S_NAME
+				        FROM MF_COMM_CODE CC
+				        WHERE MCC_L_CODE = 'MENU01' AND NOT MCC_S_CODE = ' '
+				) A 
+		) A
+		WHERE EXISTS (
+		    SELECT 1 FROM MF_USER_PMS
+		    WHERE MUP_USERID = A.MUP_USERID
+		    AND MUP_PROGID = A.MCC_S_CODE
+		)    
+		ORDER BY MCC_M_CODE, MCC_S_CODE
+	</select>
+	
+	<update id="saveAuthGrpList" parameterType="hashmap">
+        UPDATE MF_AUTH_GRP
+        SET MAG_ST_DAY = #{mag_st_day}
+            , MAG_ED_DAY = #{mag_ed_day}
+            , CMN_UPD_PROG = 'saveAuthGrpList'
+            , CMN_UPD_ID = #{ss_userid}
+            , CMN_UPD_DATE = SYSDATE
+        WHERE MAG_ID = #{mag_id}
+        AND MAG_GRPCODE = #{mag_grpcode}
+	</update>
+	
+	<update id="saveUserPmsList" parameterType="hashmap">
+        MERGE INTO MF_USER_PMS UP
+        USING (
+             SELECT #{mup_userid} MUP_USERID
+             	  , #{mup_progid} MUP_PROGID
+             FROM   DUAL
+        ) S
+        ON
+        (
+             S.MUP_USERID = UP.MUP_USERID
+             AND S.MUP_PROGID = UP.MUP_PROGID
+        )
+        WHEN MATCHED
+        THEN
+            UPDATE SET MUP_SRCHLVL = #{mup_srchlvl}
+                , MUP_UPDLVL = #{mup_updlvl}
+                , CMN_UPD_PROG = 'saveUserPmsList'
+                , CMN_UPD_DATE = SYSDATE
+                , CMN_UPD_ID = #{ss_userid}
+        WHEN NOT MATCHED
+        THEN
+            INSERT (
+               MUP_USERID, MUP_PROGID, MUP_SRCHLVL, 
+               MUP_UPDLVL, CMN_DEL_STS, CMN_MAK_DATE, 
+               CMN_MAK_PROG, CMN_MAK_ID) 
+            VALUES ( S.MUP_USERID, S.MUP_PROGID, #{mup_srchlvl},
+                #{mup_updlvl}, 'N', SYSDATE,
+                'saveUserPmsList', #{ss_userid})
+	</update>
+	
+</mapper>

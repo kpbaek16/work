@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Sta0607">
+
+	<sql id="AniBurnList">
+		  SELECT   TO_CHAR (DAIO_IODATE, 'YYYY-MM-DD') TXT_DAIO_IODATE,
+				   MTI_DPTNO,
+		           MTI_TEAMNO,
+                   MVI_VVRMNO,
+				   MAC_NATMON,
+				   FN_GETCOMCODE_CLS3NAME ('200', '206', MAC_CITES) TXT_MAC_CITES,
+				   FN_GETCOMCODE_CLS3NAME ('200', '207', MAC_ENDANG) TXT_MAC_ENDANG,
+				   FN_GETANICLSNAME (MAI_ANICODE, '1') TXT_MAI_ANICODE_1,
+				   MAC_NAME,
+				   MAI_ANICODE,
+				   SUM (CASE WHEN (MAI_SEX IN ('1', '3')) THEN 1 ELSE 0 END) MAI_SEX_M,
+				   SUM (CASE WHEN (MAI_SEX IN ('2', '4')) THEN 1 ELSE 0 END) MAI_SEX_F,
+				   SUM (CASE WHEN (MAI_SEX IN ('5', '6')) THEN 1 ELSE 0 END) MAI_SEX_A,
+				   COUNT (MAI_SEX) TOT_MAI_SEX
+			FROM   MF_ANI_INFO A,
+				   MF_ANI_CLS,
+				   DT_ANI_IO,
+				   MF_VVRM_INFO V,
+				   MF_TEAM_INFO T,
+				   MF_DPT_INFO
+		   WHERE	   MAI_ANICODE = DAIO_ANICODE
+				   AND MAI_VVRMNO = MVI_VVRMNO
+				   AND MAI_ANICLSCODE = MAC_ANICLSCODE
+				   AND A.CMN_DEL_STS = 'N'
+				   AND MVI_TEAMNO = MTI_TEAMNO
+				   AND MTI_DPTNO = MDI_LINKNO
+				   AND DAIO_IOTYPE = '1'
+				   AND DAIO_RESN = '2'
+			<if test="schYear != ''">
+			<![CDATA[
+				   AND #{schYear} = TO_CHAR (DAIO_IODATE, 'YYYY')
+			]]>
+	 		</if>
+		GROUP BY   TO_CHAR (DAIO_IODATE, 'YYYY-MM-DD'),
+				   MTI_DPTNO,
+				   MTI_TEAMNO,
+				   MVI_VVRMNO,
+				   MAC_NATMON,
+				   MAC_CITES,
+				   MAC_ENDANG,
+				   MAC_NAME,
+				   MAI_ANICODE
+	</sql>
+
+	<select id="selectAniBurnList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH BURN_LIST AS (
+	<include refid="AniBurnList" />
+		) 
+        SELECT A.*,
+            (SELECT MDI_DPTNAME FROM MF_DPT_INFO WHERE MDI_LINKNO = A.MTI_DPTNO) MDI_DPTNAME,
+            (SELECT MTI_TEAMNAME FROM MF_TEAM_INFO WHERE MTI_TEAMNO = A.MTI_TEAMNO) MTI_TEAMNAME,
+            (SELECT MVI_VVRMNAME FROM MF_VVRM_INFO WHERE MVI_VVRMNO = A.MVI_VVRMNO) MVI_VVRMNAME
+        FROM BURN_LIST A
+        ORDER BY   TXT_DAIO_IODATE,
+				   MDI_DPTNAME,
+				   MTI_TEAMNAME,
+				   MVI_VVRMNAME,
+                   TXT_MAI_ANICODE_1,
+				   MAC_NAME
+	</select>
+
+	<select id="selectAniBurnTotList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH BURN_LIST AS (
+			<include refid="AniBurnList" />
+        ) 
+        SELECT 
+            COUNT (DISTINCT MAC_NAME) CNT_MAC_NAME,
+            SUM (MAI_SEX_M) MAI_SEX_M,
+            SUM (MAI_SEX_F) MAI_SEX_F,
+            SUM (MAI_SEX_A) MAI_SEX_A,
+            COUNT (TOT_MAI_SEX) TOT_MAI_SEX
+        FROM BURN_LIST A
+	</select>
+	
+</mapper>
