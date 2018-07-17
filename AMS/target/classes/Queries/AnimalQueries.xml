@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="AnimalMapper">
+	<select id="getAnimalInfo" resultType="java.util.LinkedHashMap">
+		SELECT * 
+		FROM MF_ANI_INFO
+		WHERE MAI_ANICODE = 'B3-2-1-1'
+	</select>
+	<select id="getAnimal_Group" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT 
+		<choose>
+		<when test="type == 'jong'">
+		MAC_ANICLSCODE, MAC_ANICODE1, MAC_ANICODE2, MAC_ANICODE3, MAC_ANICODE4_SEQ,
+		(
+			select MAC_NAME 
+			  FROM MF_ANI_CLS B 
+			 WHERE B.MAC_ANICLSCODE = concat(A.MAC_ANICODE1, '0-0-0')
+		) kang_NAME, 
+		(
+			select MAC_NAME 
+			  FROM MF_ANI_CLS B 
+			 WHERE B.MAC_ANICLSCODE = concat(concat(A.MAC_ANICODE1, A.MAC_ANICODE2), '-0-0')
+		) mog_NAME,
+		(
+			select MAC_NAME 
+			  FROM MF_ANI_CLS B 
+			 WHERE B.MAC_ANICLSCODE = concat(concat(concat(concat(A.MAC_ANICODE1, A.MAC_ANICODE2),'-'),A.MAC_ANICODE3), '-0')
+		) gwa_NAME,
+		MAC_NAME
+		</when>
+		<when test="type == 'mog'">
+		MAC_ANICLSCODE, MAC_ANICODE1, MAC_ANICODE2, 
+		(
+			select MAC_NAME 
+			  FROM MF_ANI_CLS B 
+			 WHERE B.MAC_ANICLSCODE = concat(A.MAC_ANICODE1, '0-0-0')
+		) kang_NAME, MAC_NAME
+		</when>
+		<when test="type == 'gwa'">
+		MAC_ANICLSCODE, MAC_ANICODE1, MAC_ANICODE2, MAC_ANICODE3, 
+		(
+			select MAC_NAME 
+			  FROM MF_ANI_CLS B 
+			 WHERE B.MAC_ANICLSCODE = concat(A.MAC_ANICODE1, '0-0-0')
+		) kang_NAME, 
+		(
+			select MAC_NAME 
+			  FROM MF_ANI_CLS B 
+			 WHERE B.MAC_ANICLSCODE = concat(concat(A.MAC_ANICODE1, A.MAC_ANICODE2), '-0-0')
+		) mog_NAME,
+		MAC_NAME
+		</when>
+		<otherwise>
+		MAC_ANICLSCODE, MAC_ANICODE1, MAC_NAME
+		</otherwise>
+		</choose>
+		FROM MF_ANI_CLS A
+		<choose>
+		<when test="type == 'jong'">
+		WHERE NOT MAC_ANICODE2 = 0 AND NOT MAC_ANICODE3 = 0 AND NOT MAC_ANICODE4_SEQ = 0
+		<if test="aniCode1 != '' and aniCode2 != '' and aniCode3 != ''">
+			AND MAC_ANICODE1 = #{aniCode1}
+			AND MAC_ANICODE2 = #{aniCode2}
+			AND MAC_ANICODE3 = #{aniCode3}
+		</if>
+		</when>
+		<when test="type == 'mog'">
+		WHERE MAC_ANICODE3 = 0 AND NOT MAC_ANICODE2 = 0
+		<if test="aniCode1 != ''">
+			AND MAC_ANICODE1 = #{aniCode1}
+		</if>
+		</when>
+		<when test="type == 'gwa'">
+		WHERE MAC_ANICODE4_SEQ = '0' AND NOT MAC_ANICODE2 = 0 AND NOT MAC_ANICODE3 = 0
+		<if test="aniCode1 != '' and aniCode2 != '' ">
+			AND MAC_ANICODE1 = #{aniCode1}
+			AND MAC_ANICODE2 = #{aniCode2}
+		</if>
+		</when>
+		<otherwise>
+		WHERE MAC_ANICODE2 = '0'
+		</otherwise>
+		</choose>
+		<if test="name != ''">
+			AND MAC_NAME LIKE CONCAT(CONCAT('%', #{name}), '%')
+		</if>
+		ORDER BY MAC_ANICODE1, MAC_ANICODE2, MAC_ANICODE3, MAC_ANICODE4_SEQ
+	</select>
+</mapper>

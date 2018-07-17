@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Sta0608">
+
+	<sql id="AniDeadList">
+		  SELECT   TO_CHAR (MAI_DETHDATE, 'YYYY-MM-DD') TXT_MAI_DETHDATE,
+				   FN_GETANICLSNAME (MAI_ANICODE, '1') TXT_MAI_ANICODE_1,
+		           MAI_VVRMNO,
+				   MAC_NAME,
+				   MAI_ANICODE,
+				   PBR_WEIGHT,
+				   PBR_BUDZZNAME,
+				   FN_GETCOMCODE_CLS3NAME ('200', '202', MAI_SEX) TXT_MAI_SEX,
+				   TO_CHAR (MAI_BIRTHDAY, 'YYYY-MM-DD') TXT_MAI_BIRTHDAY,
+				   MAI_DETHPLC,
+				   FN_GETCOMCODE_CLS3NAME ('200', '205', MAC_RANK) TXT_MAC_RANK,
+				   FN_GETCOMCODE_CLS3NAME ('300', '304', PBR_DZZTYPE) TXT_PBR_DZZTYPE,
+				   FN_GETCOMCODE_CLS3NAME ('200', '203', MAI_DETHBDYPRC) TXT_MAI_DETHBDYPRC,
+		                   FN_GETCOMCODE_CLS3NAME ('200', '206', MAC_CITES) TXT_MAC_CITES,
+		                   FN_GETCOMCODE_CLS3NAME ('200', '207', MAC_ENDANG) TXT_MAC_ENDANG,
+		                   MAC_NATMON
+			FROM   MF_ANI_CLS, MF_ANI_INFO A
+		               LEFT JOIN
+		                   PS_DETH_REPT
+		               ON (MAI_ANICODE = PDR_ANICODE)
+		               LEFT JOIN
+		                   PS_BUKM_REPT
+		               ON (PDR_RSLTDOCNO = PBR_DOCNO)
+		   WHERE   MAI_ANICLSCODE = MAC_ANICLSCODE
+				   AND MAI_DETHTYPE = '2'
+			<if test="schYear != ''">
+			<![CDATA[
+				   AND TO_CHAR (MAI_DETHDATE, 'YYYY') = #{schYear}
+			]]>
+	 		</if>
+			<if test="schMonth != ''">
+			<![CDATA[
+				   AND TO_NUMBER(TO_CHAR (MAI_DETHDATE, 'MM')) = #{schMonth}
+			]]>
+	 		</if>
+				   AND A.CMN_DEL_STS = 'N'
+	</sql>
+
+	<select id="selectAniDeadList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH DEAD_LIST AS (
+	<include refid="AniDeadList" />
+		) 
+        SELECT A.*,
+            (SELECT MVI_VVRMNAME FROM MF_VVRM_INFO WHERE MVI_VVRMNO = A.MAI_VVRMNO) MVI_VVRMNAME
+        FROM DEAD_LIST A
+	    ORDER BY TXT_MAI_DETHDATE DESC,
+			     TXT_MAI_ANICODE_1,
+			     MAC_NAME,
+			     MAI_ANICODE
+	</select>
+
+	<select id="selectAniDeadTotList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH DEAD_LIST AS (
+			<include refid="AniDeadList" />
+        ) 
+        SELECT A.*
+        FROM DEAD_LIST A
+	</select>
+	
+</mapper>

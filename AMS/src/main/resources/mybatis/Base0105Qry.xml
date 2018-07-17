@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Base0105">
+
+	<select id="selectDeptList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT A.MDI_LINKNO, A.MDI_DPTNAME
+		FROM MF_DPT_INFO A JOIN MF_VVRM_INFO V JOIN MF_TEAM_INFO B 
+		ON V.MVI_TEAMNO = B.MTI_TEAMNO 
+		ON A.MDI_LINKNO = B.MTI_DPTNO
+		WHERE A.CMN_DEL_STS = 'N'
+		GROUP BY A.MDI_LINKNO, A.MDI_DPTNAME
+		<if test="schType=='dept' and schKeyword != ''">
+		HAVING MDI_DPTNAME LIKE '%' || #{schKeyword} || '%'
+		</if>
+		ORDER BY MDI_DPTNAME	
+	</select>
+	
+	<select id="selectTeamList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT A.MTI_TEAMNO, A.MTI_TEAMNAME, B.MDI_LINKNO, B.MDI_DPTNAME
+		FROM   MF_DPT_INFO B, MF_TEAM_INFO A
+		WHERE   A.MTI_DPTNO = B.MDI_LINKNO
+		AND A.CMN_DEL_STS = 'N'
+		AND B.CMN_DEL_STS = 'N'
+		<if test="dptno != ''">
+        AND A.MTI_DPTNO = #{dptno}
+		</if>
+		<if test="schType=='team' and schKeyword != ''">
+		AND A.MTI_TEAMNAME LIKE '%' || #{schKeyword} || '%'
+		</if>
+		ORDER BY A.MTI_TEAMNO, B.MDI_LINKNO
+	</select>
+	<select id="selectVvrmList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+        SELECT MVI_VVRMNO, MVI_VVRMNAME
+        FROM MF_VVRM_INFO, MF_TEAM_INFO
+		<if test="team_no != ''">
+		WHERE MVI_TEAMNO =  #{team_no}
+		AND MTI_TEAMNO = MVI_TEAMNO
+		</if>
+		<if test="schType=='name' and schKeyword != ''">
+		AND MVI_VVRMNAME LIKE '%' || #{schKeyword} || '%'
+		</if>
+        GROUP BY MVI_VVRMNO, MVI_VVRMNAME
+        ORDER BY MVI_VVRMNO
+	</select>
+	
+	<select id="selectVvrmInfo" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	    SELECT A.* 
+            ,(SELECT MTI_TEAMNAME FROM MF_TEAM_INFO
+             WHERE MTI_TEAMNO = A.MVI_TEAMNO) AS MTI_TEAMNAME
+            ,(SELECT MDI_DPTNAME FROM MF_DPT_INFO
+             WHERE MDI_LINKNO = A.MTI_DPTNO) AS MDI_DPTNAME
+        FROM (
+                SELECT  MVI_VVRMNO, MVI_VVRMNAME, MVI_TEAMNO, 
+                        MVI_SYPATTN, MVI_CMNT, CMN_DEL_STS
+	                   ,(SELECT MTI_DPTNO FROM MF_TEAM_INFO
+	                    WHERE MTI_TEAMNO = A.MVI_TEAMNO) AS MTI_DPTNO
+                FROM MF_VVRM_INFO A 
+                WHERE A.MVI_VVRMNO = #{mvi_vvrmno}
+        )  A
+	</select>
+	
+	<select id="getMaxNum" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	SELECT NVL(MAX(TO_NUMBER(MVI_VVRMNO))+1,'1')as MAXNUM FROM MF_VVRM_INFO
+	</select>
+	
+	<select id="selectSypattnList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH VVRM_INFO AS (
+		    SELECT MVI_VVRMNO, MVI_SYPATTN
+		    FROM MF_VVRM_INFO
+		    WHERE MVI_VVRMNO = #{mvi_vvrmno}
+		)
+		SELECT A.MVI_VVRMNO, A.MVI_SYPATTN, B.MVI_SYPATTN_CODE
+		    ,(
+		        SELECT MCC_S_NAME       
+		        FROM   MF_COMM_CODE
+		        WHERE   MCC_L_CODE = '100' 
+		        AND MCC_M_CODE = '110' 
+		        AND MCC_S_CODE=B.MVI_SYPATTN_CODE    
+		    ) AS MVI_SYPATTN_TXT
+		FROM VVRM_INFO A, (
+		    SELECT REGEXP_SUBSTR(B.MVI_SYPATTN_CODE, '[^,]+', 1, LEVEL) MVI_SYPATTN_CODE
+		    FROM (
+		        SELECT MVI_SYPATTN AS MVI_SYPATTN_CODE
+		        FROM VVRM_INFO
+		    ) B
+			<![CDATA[
+		    CONNECT BY LEVEL <= LENGTH(REGEXP_REPLACE(B.MVI_SYPATTN_CODE, '[^,]+',''))+1
+			]]>
+		) B
+		ORDER BY B.MVI_SYPATTN_CODE
+	</select>
+	
+	<select id="selectManagerList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+        SELECT A.* 
+        FROM (
+            SELECT A.* 
+	            ,(SELECT MDI_DPTNAME FROM MF_DPT_INFO
+	              WHERE MDI_LINKNO = A.MTI_DPTNO) AS MDI_DPTNAME
+	            ,(SELECT MTI_TEAMNAME FROM MF_TEAM_INFO
+	             WHERE MTI_TEAMNO = A.MUI_TEAMNO) AS MTI_TEAMNAME
+	            ,(SELECT MVI_VVRMNAME FROM MF_VVRM_INFO
+	             WHERE MVI_VVRMNO = A.MVM_VVRMNO) AS MVI_VVRMNAME
+                ,DECODE(MVM_VVRMNO, #{vvrmno},'Y','N') AS CHK_YN
+            FROM (
+                SELECT A.MVM_VVRMNO,
+                       A.CMN_DEL_STS,
+                       B.MUI_ID,
+                       B.MUI_TEAMNO,
+                       B.MUI_DPTLVLNAME,
+                       B.MUI_DPTLVLCODE,
+                       B.MUI_DPTPOSITCODE,
+                       B.MUI_DPTPOSITNAME,
+                       B.MUI_NAME,
+                       B.MUI_LINCNO,
+                       (SELECT MTI_DPTNO FROM MF_TEAM_INFO
+                        WHERE MTI_TEAMNO = B.MUI_TEAMNO) AS MTI_DPTNO
+                FROM   MF_VVRM_MGR A, MF_USER_INFO B
+                WHERE   A.MVM_USERID = B.MUI_ID
+			<if test="team_no != '' and team_no != null">
+				AND MUI_TEAMNO = #{team_no}
+			</if>
+			<if test="sch_vvrmno != '' and sch_vvrmno != null">
+				AND MVM_VVRMNO = #{sch_vvrmno}
+			</if>
+            )  A
+		<if test="dptno != '' and dptno != null">
+            WHERE MTI_DPTNO = #{dptno}
+		</if>
+        )  A
+		<if test="schType != '' and schKeyword != ''">
+        WHERE DECODE(#{schType},'dept', MDI_DPTNAME, 'team', MTI_TEAMNAME, 'name', MUI_NAME) LIKE '%' || #{schKeyword} || '%'
+		</if>
+        ORDER BY CHK_YN DESC, MDI_DPTNAME, MTI_TEAMNAME, MVI_VVRMNAME
+	</select>
+
+	<update id="deleteVmlList" parameterType="hashmap">
+		 DELETE FROM MF_VVRM_MGR A
+		 WHERE MVM_VVRMNO = #{vvrmno} 
+		<if test="list_N != null">
+		 AND MVM_USERID IN 
+		<foreach collection="list_N" item="item" index="index" separator="," open="(" close=")">
+			#{item}
+		</foreach>
+		</if>
+	</update>
+	
+	<update id="createVmlList" parameterType="hashmap">
+		MERGE INTO MF_VVRM_MGR VM
+        USING (
+             SELECT MVI_VVRMNO, MUI_ID
+             FROM  MF_VVRM_INFO
+             	 ,(SELECT MUI_ID FROM MF_USER_INFO 
+             	   WHERE MUI_ID IN
+				<foreach collection="list_Y" item="item" index="index" separator="," open="(" close=")">
+					#{item}
+				</foreach>
+             	  )
+             WHERE CMN_DEL_STS = 'N' 
+             AND MVI_VVRMNO = #{vvrmno}
+        ) VI
+        ON
+        (
+            VM.MVM_VVRMNO = VI.MVI_VVRMNO
+			AND VM.MVM_USERID = VI.MUI_ID
+        )
+        WHEN MATCHED
+        THEN
+            UPDATE SET CMN_UPD_PROG = 'createVmlList'
+                , CMN_UPD_DATE = SYSDATE
+                , CMN_UPD_ID =  #{ss_userid} 
+        WHEN NOT MATCHED
+        THEN
+            INSERT (
+               MVM_VVRMNO, MVM_USERID, CMN_DEL_STS, 
+               CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID) 
+            VALUES (  #{vvrmno} , VI.MUI_ID, 'N',
+                SYSDATE, 'createVmlList', #{ss_userid} )
+	</update>
+	
+	<select id="showDptTeam" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	SELECT MTI_DPTNO, MDI_DPTNAME , MTI_TEAMNO, MTI_TEAMNAME
+	FROM MF_TEAM_INFO, MF_DPT_INFO
+	WHERE MDI_LINKNO = MTI_DPTNO
+	ORDER BY MTI_DPTNO, MTI_TEAMNO
+	</select>
+		
+</mapper>

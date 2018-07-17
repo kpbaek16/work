@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Sta0606">
+
+	<sql id="AniRentList">
+        SELECT MTI_DPTNO,
+               (SELECT MDI_DPTNAME FROM MF_DPT_INFO WHERE MDI_LINKNO = MTI_DPTNO) MDI_DPTNAME,
+		       MTI_TEAMNAME,
+		       TO_CHAR (DAIO_IODATE, 'YYYY-MM-DD') TXT_DAIO_IODATE,
+		       TO_CHAR (DAIO_RENTEDATE, 'YYYY-MM-DD') TXT_DAIO_RENTEDATE,
+		       DAIO_PLACE,
+		       DAIO_PRICE,
+		       FN_GETANICLSNAME (MAI_ANICODE, '1') TXT_MAI_ANICODE,
+		       MAC_NAME,
+		       MAI_ANICODE,
+		       SUBSTR(MAI_ANICODE,1, INSTR(MAI_ANICODE, '-', 1, 3)-1) MAC_ANICLSCODE,
+		       SUM (CASE WHEN (MAI_SEX IN ('1', '3')) THEN 1 ELSE 0 END) MAI_SEX_M,
+		       SUM (CASE WHEN (MAI_SEX IN ('2', '4')) THEN 1 ELSE 0 END) MAI_SEX_F,
+		       SUM (CASE WHEN (MAI_SEX IN ('5', '6')) THEN 1 ELSE 0 END) MAI_SEX_A,
+		       COUNT (MAI_SEX) TOT_MAI_SEX
+		FROM   MF_ANI_INFO A,
+		       MF_ANI_CLS,
+		       DT_ANI_IO,
+		       MF_VVRM_INFO,
+		       MF_TEAM_INFO,
+		       MF_DPT_INFO
+		WHERE  MAI_ANICODE = DAIO_ANICODE
+		       AND MAI_VVRMNO = MVI_VVRMNO
+		       AND MAI_ANICLSCODE = MAC_ANICLSCODE
+		       AND MVI_TEAMNO = MTI_TEAMNO
+		       AND MTI_DPTNO = MDI_LINKNO
+		       AND DAIO_IOTYPE = '2'
+		       AND A.CMN_DEL_STS = 'N'
+		       AND DAIO_RESN = '8'
+		<if test="schDate != ''">
+		<![CDATA[
+			   AND TO_DATE (#{schDate}, 'YYYY-MM-DD') <= DAIO_RENTEDATE
+		]]>
+ 		</if>
+        GROUP BY   MTI_DPTNO,
+                   MTI_TEAMNAME,
+                   TO_CHAR (DAIO_IODATE, 'YYYY-MM-DD'),
+                   TO_CHAR (DAIO_RENTEDATE, 'YYYY-MM-DD'),
+                   FN_GETANICLSNAME (MAI_ANICODE, '1'),
+                   DAIO_PLACE,
+                   DAIO_PRICE,
+                   MAC_NAME,
+                   MAI_ANICODE
+	</sql>
+
+	<select id="selectAniRentList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	<include refid="AniRentList" />
+        ORDER BY   MTI_DPTNO,
+                   MTI_TEAMNAME,
+                   TO_CHAR (DAIO_IODATE, 'YYYY-MM-DD'),
+                   TO_CHAR (DAIO_RENTEDATE, 'YYYY-MM-DD'),
+                   FN_GETANICLSNAME (MAI_ANICODE, '1')
+	</select>
+
+	<select id="selectAniRentTotList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH RENT_LIST AS (
+			<include refid="AniRentList" />
+		) 
+		SELECT MTI_DPTNO,
+			(SELECT MDI_DPTNAME FROM MF_DPT_INFO WHERE MDI_LINKNO = MTI_DPTNO) MDI_DPTNAME,
+	        COUNT (DISTINCT MAC_ANICLSCODE) CNT_MAI_ANICLSCODE,
+	        SUM (MAI_SEX_M) MAI_SEX_M,
+	        SUM (MAI_SEX_F) MAI_SEX_F,
+	        SUM (MAI_SEX_A) MAI_SEX_A,
+	        COUNT (TOT_MAI_SEX) TOT_MAI_SEX
+		FROM RENT_LIST
+		GROUP BY   MTI_DPTNO
+		ORDER BY   MTI_DPTNO		       
+	</select>
+	
+</mapper>

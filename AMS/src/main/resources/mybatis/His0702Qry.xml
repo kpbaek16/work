@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="His0702">
+
+	<sql id="UserHisList">
+		SELECT A.* 
+		    ,( SELECT MDI_DPTNAME
+		       FROM MF_DPT_INFO
+		       WHERE MDI_LINKNO = A.MTI_DPTNO) MDI_DPTNAME
+		FROM
+		(
+		    SELECT A.* 
+		        ,( SELECT MTI_DPTNO
+		           FROM MF_TEAM_INFO
+		           WHERE MTI_TEAMNO = A.MUI_TEAMNO) MTI_DPTNO
+		        ,( SELECT MCC_S_NAME
+		           FROM MF_COMM_CODE
+		           WHERE MCC_L_CODE = '100' AND MCC_M_CODE='100' AND MCC_S_CODE = A.MUI_JCCODE) TXT_MUI_JCCODE
+		        ,( SELECT MCC_S_NAME
+		           FROM MF_COMM_CODE
+		           WHERE MCC_L_CODE = '700' AND MCC_M_CODE='702' AND MCC_S_CODE = A.HUI_LOGTYPE) TXT_HUI_LOGTYPE
+		    FROM 
+		    (
+		        SELECT 
+		            H.HUI_SEQ, H.HUI_ID, H.CMN_DEL_STS, 
+		            H.CMN_MAK_DATE, H.CMN_MAK_PROG, H.CMN_MAK_ID, 
+		            H.CMN_UPD_DATE, H.CMN_UPD_PROG, H.CMN_UPD_ID, 
+		            H.HUI_LOGTYPE, H.HUI_BFR_VL, H.HUI_AFT_VL, 
+		            H.HUI_LOGDATE
+		            , UI.MUI_NAME, UI.MUI_TEAMNO, UI.MUI_JCCODE
+		        FROM AMS.HS_USER_INFO H, MF_USER_INFO UI
+		        WHERE H.HUI_ID = UI.MUI_ID(+)
+				<if test="cal_1 != ''">
+				<![CDATA[
+					   AND TO_CHAR(H.HUI_LOGDATE,'YYYY-MM-DD') >= #{cal_1}
+				]]>
+				</if>
+				<if test="cal_2 != ''">
+				<![CDATA[
+					   AND TO_CHAR(H.HUI_LOGDATE,'YYYY-MM-DD') <= #{cal_2}
+				]]>
+				</if>
+ 				<if test="sch_mui_name != ''">
+				<![CDATA[
+                       AND UI.MUI_NAME LIKE '%' || #{sch_mui_name} || '%'
+				]]>
+				</if>
+ 		    ) A    
+		) A   
+	</sql>
+
+	<select id="selectUserHisList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH HIS_LIST AS (
+			<include refid="UserHisList" />
+		)
+		SELECT A.* 
+		    ,DECODE(HUI_LOGTYPE,'1',( SELECT MDI_DPTNAME
+		                               FROM MF_DPT_INFO
+		                               WHERE MDI_LINKNO = A.HUI_BFR_VL)
+		                       ,'2',( SELECT MTI_TEAMNAME
+		                               FROM MF_TEAM_INFO
+		                               WHERE MTI_TEAMNO = A.HUI_BFR_VL)
+		                       ,'3',HUI_BFR_VL
+		                       ,'4',( SELECT MCC_S_NAME
+		                               FROM MF_COMM_CODE
+		                               WHERE MCC_L_CODE = '100' AND MCC_M_CODE='100' AND MCC_S_CODE = A.HUI_BFR_VL)) TXT_HUI_BFR_VL
+		    ,DECODE(HUI_LOGTYPE,'1',( SELECT MDI_DPTNAME
+		                               FROM MF_DPT_INFO
+		                               WHERE MDI_LINKNO = A.HUI_AFT_VL)
+		                       ,'2',( SELECT MTI_TEAMNAME
+		                               FROM MF_TEAM_INFO
+		                               WHERE MTI_TEAMNO = A.HUI_AFT_VL)
+		                       ,'3',HUI_BFR_VL
+		                       ,'4',( SELECT MCC_S_NAME
+		                               FROM MF_COMM_CODE
+		                               WHERE MCC_L_CODE = '100' AND MCC_M_CODE='100' AND MCC_S_CODE = A.HUI_AFT_VL)) TXT_HUI_AFT_VL
+            ,(SELECT MUI_NAME FROM MF_USER_INFO A 
+              WHERE EXISTS ( SELECT 1 FROM MF_SYS_USER WHERE MSU_USERID = A.CMN_UPD_ID )
+             ) UPD_MUI_NAME
+            ,TO_CHAR(A.HUI_LOGDATE,'YYYY-MM-DD') TXT_HUI_LOGDATE
+		FROM HIS_LIST A
+		ORDER BY HUI_LOGDATE DESC
+	</select>
+
+</mapper>

@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Sta0604">
+
+	<sql id="AniIoList">
+		SELECT DAIO_IOTYPE, DAIO_IODATE,
+			   TO_CHAR (DAIO_IODATE, 'YYYY-MM-DD') TXT_DAIO_IODATE,
+		       FN_GETCOMCODE_CLS3NAME ('200', '250', DAIO_IOTYPE) TXT_DAIO_IOTYPE,
+		       DECODE (DAIO_IOTYPE,
+		               1, FN_GETCOMCODE_CLS3NAME ('200', '253', DAIO_RESN),
+		               FN_GETCOMCODE_CLS3NAME ('200', '254', DAIO_RESN)) TXT_DAIO_RESN,
+               MTI_DPTNO,
+			  (SELECT MDI_DPTNAME FROM MF_DPT_INFO WHERE MDI_LINKNO = MTI_DPTNO) MDI_DPTNAME,
+		       MTI_TEAMNAME,
+	           MVI_VVRMNAME,
+	           MAC_ANICODE1,
+		       FN_GETANICLSNAME (MAI_ANICODE, '1') TXT_MAI_ANICODE_1,
+		       MAC_NAME,
+		       MAI_ANICODE,
+               SUBSTR(MAI_ANICODE,1, INSTR(MAI_ANICODE, '-', 1, 3)-1) MAC_ANICLSCODE,
+		       SUM (CASE WHEN (MAI_SEX IN ('1', '3')) THEN 1 ELSE 0 END) MAI_SEX_M,
+		       SUM (CASE WHEN (MAI_SEX IN ('2', '4')) THEN 1 ELSE 0 END) MAI_SEX_F,
+		       SUM (CASE WHEN (MAI_SEX IN ('5', '6')) THEN 1 ELSE 0 END) MAI_SEX_A,
+		       COUNT (MAI_SEX) CNT_MAI_SEX
+		FROM   MF_ANI_INFO A,
+		       MF_ANI_CLS,
+		       DT_ANI_IO,
+		       MF_VVRM_INFO,
+		       MF_TEAM_INFO,
+		       MF_DPT_INFO
+		WHERE  MAI_ANICODE = DAIO_ANICODE
+		       AND MAI_ANICLSCODE = MAC_ANICLSCODE
+		       AND MAI_VVRMNO = MVI_VVRMNO
+		<if test="cal_1 != ''">
+		<![CDATA[
+			   AND TO_CHAR(DAIO_IODATE,'YYYY-MM-DD') >= #{cal_1}
+		]]>
+		</if>
+		<if test="cal_2 != ''">
+		<![CDATA[
+			   AND TO_CHAR(DAIO_IODATE,'YYYY-MM-DD') <= #{cal_2}
+		]]>
+		</if>
+		       AND MVI_TEAMNO = MTI_TEAMNO
+		       AND MTI_DPTNO = MDI_LINKNO
+		GROUP BY   DAIO_IOTYPE,
+				   DAIO_IODATE,
+		           MTI_DPTNO,
+		           MTI_TEAMNAME,
+		           MAC_ANICODE1,
+		           MAC_NAME,
+		           DAIO_IOTYPE,
+		           DAIO_RESN,
+		           MVI_VVRMNAME,
+		           MAI_ANICODE
+	</sql>
+
+	<select id="selectAniIoIList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH IOTYPE_LIST AS (
+			<include refid="AniIoList" />
+		)
+		SELECT * FROM IOTYPE_LIST
+		WHERE DAIO_IOTYPE = '1'
+		ORDER BY   MAC_ANICODE1, TXT_MAI_ANICODE_1,
+				   DAIO_IODATE DESC,
+		           MTI_TEAMNAME,
+		           MVI_VVRMNAME,
+		           MAC_NAME
+	</select>
+
+	<select id="selectAniIoOList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH IOTYPE_LIST AS (
+			<include refid="AniIoList" />
+		)
+		SELECT * FROM IOTYPE_LIST
+		WHERE DAIO_IOTYPE = '2'
+		ORDER BY   MAC_ANICODE1, TXT_MAI_ANICODE_1,
+				   DAIO_IODATE DESC,
+		           MTI_TEAMNAME,
+		           MVI_VVRMNAME,
+		           MAC_NAME
+	</select>
+
+	<select id="selectAniIoTotList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH IOTYPE_LIST AS (
+			<include refid="AniIoList" />
+		) 
+        SELECT MAC_ANICODE1, TXT_MAI_ANICODE_1,
+            SUM (MAI_SEX_M) MAI_SEX_M,
+            SUM (MAI_SEX_F) MAI_SEX_F,
+            SUM (MAI_SEX_A) MAI_SEX_A,
+            SUM (CNT_MAI_SEX) TOT_MAI_SEX
+        FROM IOTYPE_LIST
+		WHERE DAIO_IOTYPE = #{daio_iotype}
+        GROUP BY   MAC_ANICODE1, TXT_MAI_ANICODE_1
+        ORDER BY   MAC_ANICODE1, TXT_MAI_ANICODE_1     
+	</select>
+
+	<select id="selectTotAniIoList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT MAC_ANICODE1, TXT_MAI_ANICODE_1, 
+		    SUM (MAI_SEX_M) MAI_SEX_M,
+		    SUM (MAI_SEX_F) MAI_SEX_F,
+		    SUM (MAI_SEX_A) MAI_SEX_A,
+		    SUM (TOT_MAI_SEX) TOT_MAI_SEX
+		FROM (
+			WITH IOTYPE_LIST AS (
+				<include refid="AniIoList" />
+			) 
+	        SELECT DAIO_IOTYPE, MAC_ANICODE1, TXT_MAI_ANICODE_1,
+	            DECODE(DAIO_IOTYPE, '1', SUM (MAI_SEX_M), '2', -SUM(MAI_SEX_M)) MAI_SEX_M,
+	            DECODE(DAIO_IOTYPE, '1', SUM (MAI_SEX_F), '2', -SUM(MAI_SEX_F)) MAI_SEX_F,
+	            DECODE(DAIO_IOTYPE, '1', SUM (MAI_SEX_A), '2', -SUM(MAI_SEX_A)) MAI_SEX_A,
+	            DECODE(DAIO_IOTYPE, '1', SUM (CNT_MAI_SEX), '2', -SUM(CNT_MAI_SEX)) TOT_MAI_SEX
+	        FROM IOTYPE_LIST
+	        WHERE DAIO_IOTYPE IN ('1','2')
+	        GROUP BY   DAIO_IOTYPE, MAC_ANICODE1, TXT_MAI_ANICODE_1
+	        ORDER BY   MAC_ANICODE1
+		)
+		GROUP BY MAC_ANICODE1, TXT_MAI_ANICODE_1      
+        ORDER BY   MAC_ANICODE1, TXT_MAI_ANICODE_1     
+	</select>
+	
+</mapper>

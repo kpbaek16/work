@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Treat0401">
+
+	<select id="selectDayJnlList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+        SELECT 
+            BJ.JBJ_DOCNO, BJ.JBJ_JNLDATE, BJ.JBJ_SSUSERID, 
+            BJ.JBJ_CMNT, BJ.JBJ_KJSTS, BJ.CMN_DEL_STS,
+            TO_CHAR(BJ.JBJ_JNLDATE,'YYYY-MM-DD') JNLDATE,
+            (SELECT MUI_NAME
+             FROM   MF_USER_INFO
+             WHERE  MUI_ID = BJ.JBJ_SSUSERID) MUI_NAME,
+            (
+                 SELECT NVL(SUM(DECODE(COUNT(*),0,0,1)),0)
+                 FROM   MF_ANI_INFO AI, BZ_ANI_ATCH AA
+                 WHERE  AI.MAI_ANICODE = AA.BAA_ANICODE
+                 AND EXISTS (
+                    SELECT 1 FROM JN_JINRYO_JNL JJ, JN_JINRYO_RC JR
+                    WHERE JJ.JJJ_DOCNO = JR.JJR_JRNO
+                    AND JR.JJR_DOCNO = AA.BAA_DOCNO
+                    AND TO_CHAR(BJ.JBJ_JNLDATE,'YYYYMMDD') BETWEEN TO_CHAR(JJ.JJJ_SDATE,'YYYYMMDD') AND TO_CHAR(JJ.JJJ_EDATE,'YYYYMMDD')
+                )
+                 GROUP BY AI.MAI_ANICLSCODE
+            ) CNT_CLS_JN,
+            (
+                 SELECT COUNT(*)
+                 FROM   MF_ANI_INFO AI, BZ_ANI_ATCH AA
+                 WHERE  AI.MAI_ANICODE = AA.BAA_ANICODE
+                 AND EXISTS (
+                    SELECT 1 FROM JN_JINRYO_JNL JJ, JN_JINRYO_RC JR
+                    WHERE JJ.JJJ_DOCNO = JR.JJR_JRNO
+                    AND JR.JJR_DOCNO = AA.BAA_DOCNO
+                    AND TO_CHAR(BJ.JBJ_JNLDATE,'YYYYMMDD') BETWEEN TO_CHAR(JJ.JJJ_SDATE,'YYYYMMDD') AND TO_CHAR(JJ.JJJ_EDATE,'YYYYMMDD')
+                )
+            ) CNT_ANI_JN,
+            (    
+                 SELECT NVL(SUM(DECODE(COUNT(*),0,0,1)),0)
+                 FROM   MF_ANI_INFO AI, BZ_ANI_ATCH AA
+                 WHERE  AI.MAI_ANICODE = AA.BAA_ANICODE
+                 AND AI.MAI_CURSTS = '7' --폐사 
+                 AND EXISTS (
+                    SELECT 1 FROM JN_JINRYO_JNL JJ, JN_JINRYO_RC JR
+                    WHERE JJ.JJJ_DOCNO = JR.JJR_JRNO
+                    AND JR.JJR_DOCNO = AA.BAA_DOCNO
+                    AND TO_CHAR(BJ.JBJ_JNLDATE,'YYYYMMDD') BETWEEN TO_CHAR(JJ.JJJ_SDATE,'YYYYMMDD') AND TO_CHAR(JJ.JJJ_EDATE,'YYYYMMDD')
+                 )
+                 GROUP BY AI.MAI_ANICLSCODE
+             ) CNT_CLS_7,
+            (    
+                SELECT COUNT(*)
+                 FROM   MF_ANI_INFO AI, BZ_ANI_ATCH AA
+                 WHERE  AI.MAI_ANICODE = AA.BAA_ANICODE
+                 AND  AI.MAI_CURSTS = '7' --폐사 
+                 AND EXISTS (
+                    SELECT 1 FROM JN_JINRYO_JNL JJ, JN_JINRYO_RC JR
+                    WHERE JJ.JJJ_DOCNO = JR.JJR_JRNO
+                    AND JR.JJR_DOCNO = AA.BAA_DOCNO
+                    AND TO_CHAR(BJ.JBJ_JNLDATE,'YYYYMMDD') BETWEEN TO_CHAR(JJ.JJJ_SDATE,'YYYYMMDD') AND TO_CHAR(JJ.JJJ_EDATE,'YYYYMMDD')
+                 )
+             ) CNT_ANI_7,
+            (    
+                 SELECT NVL(SUM(DECODE(COUNT(*),0,0,1)),0)
+                 FROM   MF_ANI_INFO AI, BZ_ANI_ATCH AA
+                 WHERE  AI.MAI_ANICODE = AA.BAA_ANICODE
+                 AND AI.MAI_CURSTS = '5' --입원 
+                 AND EXISTS (
+                    SELECT 1 FROM JN_JINRYO_JNL JJ, JN_JINRYO_RC JR
+                    WHERE JJ.JJJ_DOCNO = JR.JJR_JRNO
+                    AND JR.JJR_DOCNO = AA.BAA_DOCNO
+                    AND TO_CHAR(BJ.JBJ_JNLDATE,'YYYYMMDD') BETWEEN TO_CHAR(JJ.JJJ_SDATE,'YYYYMMDD') AND TO_CHAR(JJ.JJJ_EDATE,'YYYYMMDD')
+                 )
+                 GROUP BY AI.MAI_ANICLSCODE
+             ) CNT_CLS_5,
+            (    
+                SELECT COUNT(*)
+                 FROM   MF_ANI_INFO AI
+                 WHERE  MAI_CURSTS = '5' --입원 
+                 AND EXISTS (
+                    SELECT 1 FROM JN_JINRYO_RC, BZ_ANI_ATCH
+                    WHERE BAA_DOCNO = JJR_DOCNO
+                    AND BAA_ANICODE = AI.MAI_ANICODE
+                    AND JJR_DOCNO = BJ.JBJ_DOCNO
+                 )
+             ) CNT_ANI_5,
+            (
+                 SELECT COUNT(*)
+                 FROM   JN_JINRYO_DATE_KY JDK
+                 WHERE  TO_CHAR(BJ.JBJ_JNLDATE,'YYYYMMDD') = TO_CHAR(JDK.JJDKY_KSDATE,'YYYYMMDD')
+             ) CNT_KY,
+            (SELECT DECODE(BDC_PROCSTS,'X','결재대기','P','결재진행','E','결재완료') 
+             FROM BZ_DOC_COMM
+             GROUP BY BDC_DOCNO, BDC_DOCTYPE, BDC_KJNO, BDC_PROCSTS   
+             HAVING BDC_DOCNO = BJ.JBJ_DOCNO
+             AND BDC_KJNO = MAX(BDC_KJNO)
+             AND BDC_DOCTYPE = '1' --결재통상 
+             AND BDC_DOCTYPE != '4') PROCSTS
+        FROM JN_BOKN_JNL BJ
+        WHERE CMN_DEL_STS = 'N' 
+		<if test="cal_1 != ''">
+		<![CDATA[
+	    AND TO_CHAR(JBJ_JNLDATE,'YYYY-MM-DD') >= #{cal_1}
+		]]>
+		</if>
+		<if test="cal_2 != ''">
+		<![CDATA[
+	    AND TO_CHAR(JBJ_JNLDATE,'YYYY-MM-DD') <= #{cal_2}
+		]]>
+		</if>
+        ORDER BY JBJ_JNLDATE DESC
+                ,JBJ_SSUSERID DESC
+	</select>
+	
+</mapper>

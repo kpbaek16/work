@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Treat0404">
+
+	<select id="selectPreslist" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	SELECT C.JJDCB_DocNo, J.JJJ_JRType , TO_CHAR(C.JJDCB_CBDate,'YYYY-MM-DD') as JJDCB_CBDate, C.JJDCB_JRNo, I.MAI_TeamNo, fn_getDptName(I.MAI_TeamNo) as DptName, 
+	I.MAI_VvrmNo, V.MVI_VVRMNAME, B.BAA_AniCode, A.MAC_Name, I.MAI_BName,  fn_getComCode_Cls3Name(200, 202, I.MAI_Sex) as MAI_GENDER ,
+	C.JJDCB_DrugCode, D.MDI_Name, C.JJDCB_UseVol, D.MDI_Unit, J.JJJ_JRDzzName, fn_getComCode_Cls3Name(600, 602, D.MDI_Unit) as UnitName, C.JJDCB_Cmnt,  I.MAI_ANICODE
+	FROM JN_JINRYO_DATE_CB C, JN_JINRYO_JNL J, MF_ANI_CLS A, MF_ANI_INFO I, BZ_ANI_ATCH B, MF_DRUG_INFO D,MF_VVRM_INFO V
+	WHERE I.MAI_AniClsCode = A.MAC_AniClsCode 
+	AND I.MAI_AniCode = B.BAA_AniCode 
+	AND J.JJJ_RCNo = B.BAA_DocNo 
+	AND C.JJDCB_JRNo = J.JJJ_DocNo 
+	AND C.JJDCB_DrugCode = D.MDI_DrugCode
+    AND C.CMN_DEL_STS = 'N' 
+    AND I.MAI_VVRMNO = V.MVI_VVRMNO
+	
+	<if test="cal_1 != ''">
+	<![CDATA[
+	AND TO_CHAR(C.JJDCB_CBDate,'YYYY-MM-DD') >= #{cal_1}
+	]]>
+	</if>
+		
+	<if test="cal_2 != ''">
+	<![CDATA[
+	AND TO_CHAR(C.JJDCB_CBDate,'YYYY-MM-DD') <= #{cal_2}
+	]]>
+	</if>
+	
+	<if test="drugKeyword != ''">
+	AND MDI_Name LIKE '%' || #{drugKeyword} || '%'
+	</if>
+	
+	<if test="vvrmKeyword != ''">
+	AND V.MVI_VVRMNAME LIKE '%' || #{vvrmKeyword} || '%'
+	</if>
+	
+	<if test="nameKeyword != ''">
+	AND A.MAC_Name LIKE '%' || #{nameKeyword} || '%'
+	</if>
+	
+   	ORDER BY C.JJDCB_CBDate DESC, C.JJDCB_JRNO DESC
+	</select>
+	<select id="selectDrugList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		select MDI_DrugCode, MDI_ClsCode, MDI_DrugCode_Seq, MDI_Name, MDI_Type, fn_getComCode_Cls3Name(600, 601,  MDI_Type) as TypeName,
+			   MDI_Unit, fn_getComCode_Cls3Name(600, 602,  MDI_Unit) as UnitName, MDI_Purpose
+		  from MF_DRUG_INFO 
+		 where 1=1
+		<if test="SRCHNAME != ''">
+			AND MDI_Name LIKE '%' || #{SRCHNAME} || '%'
+		</if>
+		<if test="SRCHNO != ''">
+			AND MDI_DrugCode LIKE '%' || #{SRCHNO} || '%'
+		</if>
+		 order by MDI_DrugCode
+	</select>
+	<select id="selectTmpList" resultType="java.util.LinkedHashMap"  parameterType="hashmap">
+	 select T_K1, T_K2, T_K3, T_DT
+	   from TMP_INPSAVE
+	   where T_UID=#{USERID}
+		<if test="K1 != ''">
+			and T_K1=#{K1} 
+		</if>
+		<if test="K2 != ''">
+			and T_K2=#{K2} 
+		</if>
+	</select>
+	<select id="getMaxK3Info" resultType="Integer"  parameterType="hashmap">
+	 	select nvl(max(T_K3),0) as K3 from TMP_INPSAVE where T_UID=#{USERID} and T_K1=#{K1} and T_K2=#{K2} group by T_UID, T_K1, T_K2 
+	</select>
+	<select id="getDrugInfo" resultType="java.util.LinkedHashMap"  parameterType="String">
+	 select MDI_DrugCode as JJDCB_DrugCode, '0' as JJDCB_UseVol, ' ' as JJDCB_Cmnt, MDI_Name, MDI_Unit,
+	 		fn_getComCode_Cls3Name('600', '602', MDI_Unit) as UnitName
+	   from MF_DRUG_INFO
+	  where MDI_DrugCode = #{value}
+	   order by MDI_Name
+	</select>
+	<select id="selectCBDataList" resultType="java.util.LinkedHashMap"  parameterType="hashmap">
+	 SELECT rownum as SEQ, e.* FROM (
+	 select JJDCB_DocNo, to_char(JJDCB_CBDate, 'yyyy-mm-dd') as JJDCB_CBDate, JJDCB_JRNo, JJDCB_DrugCode, nvl(JJDCB_UseVol,'0') as JJDCB_UseVol, JJDCB_Cmnt, MDI_Name, MDI_Unit,
+		    fn_getComCode_Cls3Name('600', '602', MDI_Unit) as UnitName
+	   from JN_JINRYO_DATE_CB, MF_DRUG_INFO
+	  where JJDCB_DrugCode = MDI_DrugCode
+	    and JJDCB_JRNo     = #{JJJ_DOCNO}
+		and JJDCB_CBDate   = to_date(#{DTLDay}, 'yyyy-mm-dd') 
+	  order by MDI_DrugCode 
+	) e
+	</select>
+	<insert id="insertTmpInfo" parameterType="hashmap">
+		insert into TMP_INPSAVE ( T_UID, T_K1, T_K2, T_K3, T_DT ) values ( #{USERID}, #{K1}, #{K2}, #{K3}, #{T_DT})
+	</insert>
+	<insert id="insertCBInfo" parameterType="hashmap">
+		insert into JN_JINRYO_DATE_CB ( JJDCB_DocNo, JJDCB_CBDate, JJDCB_JRNo, JJDCB_DrugCode, JJDCB_UseVol, JJDCB_Cmnt, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID)
+		      values (#{CBDOCNO}, to_date(#{DTLDay}, 'yyyy-mm-dd'), #{JJJ_DOCNO}, #{DRUGCODE}, #{USEVOL}, #{CMNT}, 'N', SYSDATE,'TREAT0404',#{USERID},SYSDATE,'TREAT0404',#{USERID})
+	</insert>
+	<delete id="deleteTmpInfo" parameterType="hashmap">
+		  delete from Tmp_InpSave where T_UID=#{USERID}
+		<if test="K1 != ''">
+			and T_K1=#{K1} 
+		</if>
+		<if test="K2 != ''">
+			and T_K2=#{K2} 
+		</if>
+		<if test="CODE != ''">
+			and T_DT=#{CODE}
+		</if>   
+	</delete>
+	<delete id="deleteCBInfo" parameterType="String">
+		 delete from JN_JINRYO_DATE_CB where JJDCB_DocNo = #{value}
+	</delete>
+</mapper>

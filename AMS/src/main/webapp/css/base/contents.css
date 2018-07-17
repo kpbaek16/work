@@ -1,0 +1,196 @@
+@charset "utf-8";
+
+/* contents*/
+caption{width:1px; height:1px; visibility: hidden; font-size:0px;line-height:0px;text-indent:-9999px;}
+.contents_table{width:990px;}
+
+/* btn*/
+.add_btn{float:right; }
+.all_btn,.all2_btn{float:right;}
+.sel_btn{float:right; margin-right:10px; display:inline-block; position:relative; margin-top:5px; width:50px; height:26px; border:solid 1px #0b6691; border-radius:13px; box-sizing:border-box; background:#0d82b9; color:#fff !important;font:bold 12px/26px "돋움","굴림";text-align:center;}
+
+/*시스템관리*/
+.table_title_box{height:34px; padding:2px 0; }
+.table_title{height:20px; font:bold 14px/20px "돋움"; color:#555; }
+.table_title img{vertical-align:text-bottom; margin-right:8px;}
+.sys_btn_box{float:right;}
+.align_right,.sys_btn_area,.sys_btn_area2,.sys_btn_area3{text-align:right;}
+.table_remove{display:none;}
+.table_title_text{font:bold 14px "돋움"; color:#555;}
+
+/*base_anigroup*/
+/*조회*/
+.search_table{position:relative; width:990px;border:solid 1px #d0d0d0; box-sizing:border-box;font:normal 12px "돋움";color:#757575;  }
+.search_table th{font-weight:bold; width:200px; text-align:left; text-indent:40px; height:40px; line-height:40px;}
+.search_table td{line-height:40px;}
+.search_radio{width:13px;height:13px; margin:2px 5px 2px 0; padding:0; vertical-align:middle}
+.textfield{ width:90%; padding:3px 4px;border:1px solid #b0b0b0;background:#fff;font:normal 12px "돋움";color:#757575;}
+.search_table th.search_btn_area{border-top:1px solid #d0d0d0; background:#f5f5f5; line-height:40px;text-align:center; }
+.search_btn_area a{text-indent:0;}
+.tablebg{border-top:1px solid #d0d0d0; background:#f5f5f5;}
+/*동물그룹표*/
+.table_wrap{position:relative; left:0;width:990px; margin-top:40px;}  
+.sub_title{width:990px;height:14px; font:bold 14px "돋움"; color:#555; border-left:solid 3px #dc662e; margin-bottom:20px; text-indent:10px;}
+.ani_list{position:relative;float:left;width:150px;border:solid 1px #d0d0d0; box-sizing:border-box;margin-right:-1px;}
+.ani_list thead th{ height:38px; border-bottom:1px solid #d0d0d0; background:#f5f5f5; font:bold 14px/38px "돋움"; color:#555; text-align:left; padding:0 10px;}
+.ani_list td{height:38px;border:0;padding-left:10px;}
+.ani_list td a{font:normal 12px/36px "돋움"; color:#757575;}
+.ani_list td a:hover{font-weight:bold;color:#dc662e;}
+.article{display:none;}
+/*상세정보표*/
+.ani_info_box{position:relative; float:right; width:380px; height:700px; }
+.ani_info{width:380px; border:solid 1px #d0d0d0; box-sizing:border-box; }
+.infobase{position:absolute; top:0px; left:0px;}
+.infobase01{position:absolute; top:0px; left:0px;}
+.infoadd{position:absolute; top:0px; left:0px;}
+.infotable{position:absolute; top:0px; left:0px;}
+.infotable01{position:absolute; top:0px; left:0px;}
+.ani_info thead th{height:38px;border-bottom:1px solid #d0d0d0; background:#f5f5f5; text-align:left; font:bold 14px/38px "돋움"; color:#555; }
+.ani_info td{height:38px; padding:0 10px; border:0;font:normal 12px/38px "돋움","굴림"; color:#757575; background:#fff;}
+.ani_info th{border-right:1px solid #d0d0d0; border-bottom:1px solid #d0d0d0;background:#f5f5f5;font:bold 12px/38px "돋움"; color:#555; }
+.ani_info tbody td{border-bottom:1px solid #d0d0d0;border-right:1px solid #d0d0d0;}
+.info_title{padding-left:24px;display:inline-block;}
+.info_text{position:relative; width:98%;border:1px solid #b0b0b0;background:#fff; box-sizing:border-box;padding:4px; font:normal 12px"돋움"; color:#757575;}
+.info_text_s{position:relative; width:40%;border:1px solid #b0b0b0;background:#fff; box-sizing:border-box;padding:4px;}
+/*셀렉트박스*/
+select { width:200px; padding:4px;border: 1px solid #b0b0b0; font-family: inherit; color:#757575;}
+
+/*팝업*/
+.anigrouppop{margin-bottom:30px;}
+.anigrouppop thead th{text-align:center;}
+.anigrouppop th{border-right:1px solid #d0d0d0; border-bottom:1px solid #d0d0d0;background:#f5f5f5;font:bold 14px/38px "돋움"; color:#555; text-align:center;}
+.anigrouppop td{border-bottom:1px solid #d0d0d0;border-right:1px solid #d0d0d0;color:#757575; font:normal 12px/38px "돋움"; text-align:center;}
+.change_text{background:#fbf0ea;}
+
+
+/*base_aniinfo*/
+.aniinfo_search_box{width:990px;}
+.aniinfo_search{width:100%; border:solid 1px #d0d0d0; box-sizing:border-box;}
+.aniinfo_search td{height:38px; padding-left:10px; border:0;font:normal 12px/38px "돋움","굴림"; color:#757575; background:#fff;}
+/* .aniinfo_search input[type=text] {height:38px; padding-left:10px; border:0;font:normal 12px/38px "돋움","굴림"; color:#757575; background:#fff;} */
+.aniinfo_search th{border-right:1px solid #d0d0d0; border-bottom:1px solid #d0d0d0;background:#f5f5f5;font:bold 12px/38px "돋움"; color:#555; }
+.aniinfo_search tbody td{border-bottom:1px solid #d0d0d0;border-right:1px solid #d0d0d0;}
+.aniinfo_search tfoot td{border-right:1px solid #d0d0d0; background:#e5e5e5;}
+.aniinfo_add_box{width:990px; margin-top:40px;}
+.aniinfo_add{position:relative;width:100%; border:solid 1px #d0d0d0; box-sizing:border-box;}
+.aniinfo_add thead th{height:38px;border-bottom:1px solid #d0d0d0; background:#f5f5f5; font:bold 12px/38px "돋움"; color:#555; }
+.aniinfo_add td{height:38px; border-bottom:1px solid #d0d0d0;border-right:1px solid #d0d0d0; font:normal 12px/38px "돋움","굴림"; color:#757575; background:#fff;text-align:center;}
+.aniinfo_add th{border-right:1px solid #d0d0d0; border-bottom:1px solid #d0d0d0;background:#f5f5f5;font:bold 12px/38px "돋움"; color:#555; }
+.aniinfo_add tfoot td{background:#f5f5f5;}
+
+.table_td_margin tbody tr .text_margin{}
+.table_td_margin tbody tr td{vertical-align:middle;line-height:15px; padding:3px 3px;}
+
+.search_radio{ margin:0px 5px 3px 5px;vertical-align: middle; }
+label .type1{margin-left:0;}
+.calendar1,.calendar2{width:150px;background:url('../../images/cal_icon.gif') 137px 3px no-repeat;border:1px solid #b0b0b0; padding:4px; font:normal 12px; color:#757575;}
+#del_chk{margin-left:-1px}
+.info_add_btn{display:inline-block; margin-left:940px; margin-bottom:5px; width:50px; height:26px; border:solid 1px #0b6691; border-radius:13px; box-sizing:border-box; background:#0d82b9; color:#fff !important;font:bold 12px/26px "돋움","굴림";text-align:center;}
+.aniinfo_name{height:30px;}
+.btn_area_bottom{display:inline-block; position:relative; width:100%; left:50%; margin-left:-50%; text-align:center; margin-top:30px;}
+.textfield2{width:77%; padding:3px 4px;border:1px solid #b0b0b0;background:#fff;font:normal 12px "돋움";color:#757575;}
+.table_view_btn{display:inline-block; position:relative; float:right; margin-right:10px;margin-top:5px; width:50px; height:26px; border:solid 1px #9f9f9f; border-radius:13px; box-sizing:border-box; background:#dedede; color:#404040 !important;font:bold 12px/26px "돋움","굴림";text-align:center;}
+.calendar3{width:190px;background:url('../../images/cal_icon.gif') 177px 3px no-repeat;border:1px solid #b0b0b0; padding:4px; font:normal 12px; color:#757575;}
+.table_view3,.table_remove3{margin-bottom:10px;}
+.popup_th{text-align:right; padding-right:10px;}
+.aniinfo_search thead th img{display:block; width:100%; height:100%;}
+.aniinfo_search textarea{ text-align:center; padding:4px; border:0; text-align:left; margin-top:5px;font:normal 12px "돋움";color:#757575;}
+.td_btn_box{text-align:center;}
+.aniinfo_add tbody td.text_left{text-align:left; padding-left:15px;}
+label .type2{text-align:center;}
+.deptinfo_position{position:relative;display:inline-block;}
+.plan_box{display:inline-block; width:980px; height:100px; }
+.plan_text{width:100%; height:100px;border:1px solid #d0d0d0;background:#fff; color:#757575 !important;font:normal 12px/26px "돋움","굴림"; padding:5px; }
+textarea{font:normal 12px/26px "돋움";color:#757575;  }
+.aniinfo_search tbody td.img_td{margin:0; padding:0; height:100px;}
+.img_td img{display:block; height:100%; margin-left:auto; margin-right:auto;}
+.aniinfo_search tbody tr.text_center td, .aniinfo_search tfoot tr.text_center td{padding:0; margin:0; text-align:center;}
+.aniinfo_search th.bg_gray,.aniinfo_search td.bg_gray{background:#e5e5e5;}
+input[type=checkbox] {vertical-align: middle; margin:0px 3px 3px 3px;}
+
+/* search_area */
+.search_area {overflow:hidden;}
+.search_area .right {float:right;}
+.search_area .search_box .sel_box1 select {vertical-align:middle; border:1px solid #d0d0d0; height:30px;}
+.search_area .search_box input[type=text] {height:26px; vertical-align:middle; border:1px solid #d0d0d0;}
+.search_area .search_box .btn_search {display:inline-block; width:50px; height:26px; line-height:26px; border:solid 1px #555; border-radius:13px; box-sizing:border-box; background:#757575; color:#fff; !important;font:bold 12px/26px "돋움","굴림"; text-align:center; }
+
+.search_list{position:relative;width:100%;}
+.search_list thead th{height:44px; box-sizing:border-box; border-top:2px solid #bbb; border-bottom:1px solid #d0d0d0; background:#f5f5f5; font:bold 12px/44px "돋움"; color:#444; }
+.search_list tbody th{background:#fff; font:normal 12px/40px "돋움";  color:#606060;}
+.search_list td{height:40px; border-bottom:1px solid #d0d0d0; font:normal 12px/40px "돋움","굴림"; color:#606060; background:#fff;text-align:center;}
+
+.search_list th{border-bottom:1px solid #d0d0d0;background:#f5f5f5;font:bold 12px/40px "돋움"; }
+.search_list tbody td.text_left{text-align:left; padding-left:20px; font-weight:bold;}
+.text_left a{color:#606060;}
+.text_left a:hover{font-weight:bold; color:#dc662e;}
+
+.allsearch_box{width:100%; margin-top:40px; }
+.allsearch_list{border-top:solid 2px #b0b0b0;}
+.allsearch_list li{font:normal 12px "돋움","굴림";color:#757575; padding:20px; border-bottom:solid 1px #d0d0d0;}
+.sear_title{font-weight:bold; color:#555; font-size:14px;padding-right:10px;}
+.sear_title2{font-size:14px; color:#555;}
+.sear_date{float:right;margin-right:10px;}
+.allsearch_list li p{margin-top:10px;}
+
+/* comment */
+.comment_box{width:100%; background:#f8f8f8; border-top:solid 1px #e0e0e0; margin-top:30px;}
+.comment_list{width:100%;}
+.comment_list li{border-bottom:dashed 1px #e0e0e0; padding:10px 20px; font:normal 12px "돋움","굴림";  color:#757575;}
+.comment_name{font-weight:bold; color:#999; }
+.comment_time{font-size:11px; margin-left:10px;}
+.comment_list li p{padding-top:10px;}
+.comment_write{width:97%; margin-top:10px;}
+.comment_write span{display:inline-block; font:normal 12px "돋움","굴림";  color:#757575; padding:10px 20px;}
+.comment_write p{padding-left:20px; margin-bottom:10px;}
+.comment_write a{position:relative; left:50%; margin-left:-30px; top:0px;}
+
+/* tab_menu */
+.tab_menu {margin-top:40px;}
+.tab_menu ul {display:table; width:100%;}
+.tab_menu ul li {display:table-cell; width:20%; text-align:center;}
+.tab_menu ul li a {display:block; font-size:15px; font-weight:bold; color:#6d6d6d; padding:20px 0; background:#f2f2f2; border:1px solid #cecece; border-width:1px 1px 2px 0; border-bottom:2px solid #dc662e;}
+.tab_menu ul li:first-child a {border-left:1px solid #cecece;}
+.tab_menu ul li.on a {color:#333; background:#fff; border:2px solid #dc662e; border-bottom:2px solid #fff;}
+div.margin_change{margin-top:15px;}
+
+/* 달력 */
+.cal_title_area{position:relative;width:250px; margin:0 auto; padding-bottom:10px;}
+.cal_title_area{height:40px; line-height:40px;}
+.cal_title_area span img{display:inline-block; vertical-align:middle;}
+#cal_title{width:110px; font:bold 18px/40px "돋움","굴림";  color:#555; position:absolute; left:50%; margin-left:-55px; }
+#arrow_r{width:30px;float:right;}
+.calendar_view{width:100%; border:solid 1px #d0d0d0;border-right:solid 1px #d0d0d0; box-sizing:border-box;}
+.calendar_view th{height:40px;text-align:center; background:#f8f8f8;font:bold 14px/40px "돋움","굴림"; color:#555; border-right:solid 1px #d0d0d0;box-sizing:border-box;}
+.calendar_view td{height:120px; padding:8px; font:bold 13px "돋움","굴림"; color:#555;border-top:solid 1px #d0d0d0;border-right:solid 1px #d0d0d0; box-sizing:border-box;}
+.calendar_view td .schedule_list{margin-top:3px;}
+.calendar_view td .schedule_list li{background:url('../../images/dot_icon.gif') 0 12px no-repeat; text-indent:6px;font-size:12px; font-weight:normal; padding-top:7px; color:#757575;}
+.calendar_view th.red_text{color:#eb1c1c;}
+.calendar_view tbody td .red_text{color:#eb1c1c;}
+
+.chart_style{position:relative;border:solid 1px #d0d0d0; box-sizing:border-box; margin-top:10px;float:left;font:bold 14px "돋움","굴림";  color:#555; text-align:center;padding-top:10px;margin-right:10px;}
+.chart_align{float:left;}
+.aniinfo_add span{position:relative;display:block; width:100%;font:bold 14px "돋움","굴림";  color:#777; text-align:left;padding:20px 0 3px 20px;}
+
+/* 관리자메인 */
+.admin_wrap{position:relative;width:100%;margin-top:30px;}
+.admin_box{position:relative;width:316px; height:280px;background:#fff; margin-right:20px; float:left; box-shadow:0 2px 3px #e0e0e0;  -webkit- box-shadow:0 2px 3px #e0e0e0; -moz- box-shadow:0 2px 3px #e0e0e0; box-sizing:border-box;}
+.admin_title{width:100%; height:44px; font:bold 14px/44px "돋움","굴림"; color:#555; border-bottom:solid 1px #f0f0f0; box-sizing:border-box; padding:0 20px;background:url('../../images/admin_title.png') 10px 9px no-repeat; text-indent:22px;}
+.admin_box2{width:990px; margin-top:20px; background:#fff;  box-shadow:0 2px 3px #e0e0e0;  -webkit- box-shadow:0 2px 3px #e0e0e0; -moz- box-shadow:0 2px 3px #e0e0e0; display:inline-block; box-sizing:border-box; padding-bottom:30px;}
+.main_admin{width:950px; margin:0 auto; margin-top:20px;}
+.admin_box dl dt{width:100%; height:44px; font:bold 14px/44px "돋움","굴림"; color:#555; border-bottom:solid 1px #f0f0f0; box-sizing:border-box; padding:0 20px;}
+.admin_box dl #bg_1{background:url('../../images/admin_title.png') 10px -30px no-repeat; text-indent:22px;}
+.admin_box dl #bg_2{background:url('../../images/admin_title.png') 10px -66px no-repeat; text-indent:22px;}
+.admin_box dl ul{padding:0 20px;}
+.admin_box dl ul li{width:100%; height:20px;padding-top:10px;}
+.admin_box dl ul .tit{width:50%; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; display:inline-block;float:left; background:url('../../images/dot_icon.gif') 0 8px no-repeat; text-indent:10px;}
+.admin_box dl ul .date{width:40%; display:inline-block; float:right; text-align:right;}
+.tit{font:bold 14px/20px "돋움","굴림"; color:#888;}
+.date{font:normal 12px/20px "돋움","굴림"; color:#888;}
+.admin_box dl ul li a:hover .tit,.admin_box dl ul li a:hover .date{color:#333;}
+.admin_box dl dd .btn_more{position:absolute; right:20px; top:0; font:normal 14px/44px "돋움","굴림"; color:#999;}
+.admin_pay{padding-top:10px;}
+.admin_pay li{width:100px; height:100px; float:left; border-radius:50px; border:solid 8px #ffc7ac; box-sizing:border-box; margin:0 20px 10px 30px;}
+.admin_pay li a{font:bold 14px "돋움","굴림"; color:#757575; vertical-align:middle; text-align:center;}
+.admin_pay li a .text_num{font-size:16px; color:#dc662e; margin-top:3px;}
+.admin_pay li a img{display:block; margin:0 auto; padding:8px 0;}

@@ -1,0 +1,495 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Base0107">
+
+<select id="selectAniPagingList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	<include refid="CmPageMapper.pagingPre"/>
+SELECT MAI_AniCode, MAC_Name, MAI_BName,  fn_getComCode_Cls3Name('200','202',MAI_Sex) as MAI_GENDER, MTI_TEAMNAME, MVI_VVRMNAME,  
+TO_CHAR(MAI_Birthday,'yyyy-mm-dd') as MAI_Birthday, TO_CHAR(DATE1,'YYYY-MM-DD') as DATE1, TO_CHAR(DATE2,'YYYY-MM-DD') as DATE2, 
+(SELECT fn_getComCode_Cls3Name('200','252',DAIO_RESN) FROM DT_ANI_IO WHERE C.DAIO_ANICODE = DAIO_ANICODE 
+AND TO_CHAR(DATE2,'YYYY-MM-DD') = TO_CHAR(DAIO_IODATE,'YYYY-MM-DD') AND DAIO_IOTYPE = '2') AS TYPE2,  fn_getComCode_Cls3Name('200','200',MAI_RegType) as MAI_RegType,  
+ fn_getComCode_Cls3Name('200','201',MAI_CurSts) as MAI_CurSts,  A.CMN_DEL_STS  from MF_ANI_INFO A left join (SELECT DAIO_ANICODE, MAX(DAIO_IODATE) AS DATE2 
+ FROM DT_ANI_IO WHERE DAIO_IOTYPE = '2' GROUP BY DAIO_ANICODE) C on (C.DAIO_ANICODE = MAI_ANICODE),  
+ (SELECT DAIO_ANICODE, MAX(DAIO_IODATE) AS DATE1 FROM DT_ANI_IO WHERE DAIO_IOTYPE = '1' GROUP BY DAIO_ANICODE) B, MF_ANI_CLS, MF_VVRM_INFO, MF_TEAM_INFO
+WHERE MAC_ANICLSCODE = MAI_ANICLSCODE
+AND B.DAIO_ANICODE = MAI_ANICODE
+AND MVI_VVRMNO = MAI_VVRMNO
+AND MTI_TEAMNO = MAI_TEAMNO
+ <choose>
+		<when test="pyeType == 'All'">
+		AND MAI_DethType != '0'
+		</when>
+		
+		<when test="pyeType == 'Alive'">
+		AND MAI_DethType = '1'
+		</when>
+		
+		<when test="pyeType == 'Death'">
+		AND MAI_DethType = '2'
+		</when>
+		
+		</choose>
+		
+		<if test="selbox != ''">
+		AND MVI_VVRMNO = #{selbox}
+		</if>
+      	
+		<if test="cal_1 != ''">
+		<![CDATA[
+	    AND TO_CHAR(MAI_BIRTHDAY,'YYYY-MM-DD') >= #{cal_1}
+		]]>
+		</if>
+		<if test="cal_2 != ''">
+		<![CDATA[
+	    AND TO_CHAR(MAI_BIRTHDAY,'YYYY-MM-DD') <= #{cal_2}
+		]]>
+		</if>
+		<if test="cal_3 != ''">
+		<![CDATA[
+	    AND TO_CHAR(DAIO_IODATE,'YYYY-MM-DD') >= #{cal_3}
+		]]>
+		</if>
+		<if test="cal_4 != ''">
+		<![CDATA[
+	    AND TO_CHAR(DAIO_IODATE,'YYYY-MM-DD') <= #{cal_4}
+		]]>
+		</if>
+		<if test="cal_5 != ''">
+		<![CDATA[
+	    AND TO_CHAR(MAI_DethDate,'YYYY-MM-DD') >= #{cal_5}
+		]]>
+		</if>
+		<if test="cal_6 != ''">
+		<![CDATA[
+	    AND TO_CHAR(MAI_DethDate,'YYYY-MM-DD') <= #{cal_6}
+		]]>
+		</if>
+		
+		<if test="codeSearch != ''">
+      	AND MAI_AniCode like '%' || #{codeSearch} || '%'
+      	</if>
+      	<if test="schKeyword != ''">
+      	AND MAC_Name like '%' || #{schKeyword} || '%'
+      	</if>
+      	
+      	<!-- <if test="daioPlace != ''">
+      	AND EXISTS (select * FROM DT_ANI_IO WHERE B.DAIO_ANICODE = DAIO_ANICODE AND DATE1 = DAIO_IODATE AND DAIO_IOTYPE = '1' AND DAIO_Place LIKE '%' || #{DAIO_Place} || '%')  AND A.CMN_DEL_STS = 'N'
+      	</if> -->
+      	
+      	<if test='del_sts == "N"'>
+			   AND A.CMN_DEL_STS = #{del_sts}
+		</if>
+		
+      	<if test="gunzip == 'gy'">
+      	AND MAI_KnjpType = 2
+      	</if> 
+      	
+      	<if test="gunzip == 'gn'">
+      	AND MAI_KnjpType = 1
+      	</if> 
+      	
+      	<if test="sortType == 'number'">
+      	ORDER BY MAC_AniCode1, MAC_AniCode2, MAC_AniCode3, MAC_AniCode4_Seq, MAI_AniCode_Seq
+      	</if>
+      	
+      	<if test="sortType == 'name'">
+      	ORDER BY MAC_Name ASC
+      	</if>
+      	
+      	<if test="sortType == 'bunsik'">
+      	ORDER BY MAI_BIRTHDAY DESC
+      	</if>
+      	
+      	<if test="sortType == 'banip'">
+      	ORDER BY DAIO_IODate DESC
+      	</if>
+      	
+      	<if test="sortType == 'banchul'">
+      	ORDER BY MAI_DethDate DESC
+      	</if>
+	<include refid="CmPageMapper.pagingPost"/> 
+</select>
+
+<select id="selectAniList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+SELECT MAI_AniCode, MAC_Name, MAI_BName,  fn_getComCode_Cls3Name('200','202',MAI_Sex) as MAI_GENDER, MTI_TEAMNAME, MVI_VVRMNAME,  
+TO_CHAR(MAI_Birthday,'yyyy-mm-dd') as MAI_Birthday, TO_CHAR(DATE1,'YYYY-MM-DD') as DATE1, TO_CHAR(DATE2,'YYYY-MM-DD') as DATE2, 
+(SELECT fn_getComCode_Cls3Name('200','252',DAIO_RESN) FROM DT_ANI_IO WHERE C.DAIO_ANICODE = DAIO_ANICODE 
+AND TO_CHAR(DATE2,'YYYY-MM-DD') = TO_CHAR(DAIO_IODATE,'YYYY-MM-DD') AND DAIO_IOTYPE = '2') AS TYPE2,  fn_getComCode_Cls3Name('200','200',MAI_RegType) as MAI_RegType,  
+ fn_getComCode_Cls3Name('200','201',MAI_CurSts) as MAI_CurSts,  A.CMN_DEL_STS  from MF_ANI_INFO A left join (SELECT DAIO_ANICODE, MAX(DAIO_IODATE) AS DATE2 
+ FROM DT_ANI_IO WHERE DAIO_IOTYPE = '2' GROUP BY DAIO_ANICODE) C on (C.DAIO_ANICODE = MAI_ANICODE),  
+ (SELECT DAIO_ANICODE, MAX(DAIO_IODATE) AS DATE1 FROM DT_ANI_IO WHERE DAIO_IOTYPE = '1' GROUP BY DAIO_ANICODE) B, MF_ANI_CLS, MF_VVRM_INFO, MF_TEAM_INFO
+WHERE MAC_ANICLSCODE = MAI_ANICLSCODE
+AND B.DAIO_ANICODE = MAI_ANICODE
+AND MVI_VVRMNO = MAI_VVRMNO
+AND MTI_TEAMNO = MAI_TEAMNO
+ <choose>
+		<when test="pyeType == 'All'">
+		AND MAI_DethType != '0'
+		</when>
+		
+		<when test="pyeType == 'Alive'">
+		AND MAI_DethType = '1'
+		</when>
+		
+		<when test="pyeType == 'Death'">
+		AND MAI_DethType = '2'
+		</when>
+		
+		</choose>
+		
+		<if test="selbox == '0'.toString()">
+		<!-- 전체 -->
+      	AND MVI_VVRMNAME !=' '
+      	</if>
+      	
+      	<if test="selbox == '1'.toString()">
+      	<!-- 박제실 -->
+      	AND MVI_VVRMNAME = '박제실'
+      	</if>
+      	
+      	<if test="selbox == '2'.toString()">
+      	<!-- 사료실 -->
+     	AND MVI_VVRMNAME = ='사료실'
+      	</if>
+      	
+      	<if test="selbox == '3'.toString()">
+      	<!-- 곤충관 -->
+      	AND MVI_VVRMNAME = ='곤충관'
+      	</if>
+      	
+      	<if test="selbox == '4'.toString()">
+      	<!-- 동물교실 -->
+      	AND MVI_VVRMNAME = '동물교실'
+      	</if>
+      	
+      	<if test="selbox == '5'.toString()">
+      	<!-- 나비온실 -->
+      	AND MVI_VVRMNAME = '나비온실'
+      	</if>
+      	
+      	<if test="selbox == '6'.toString()">
+      	<!-- 돌고래쇼장 -->
+      	AND MVI_VVRMNAME = '돌고래쇼장'
+      	</if>
+      	
+      	<if test="selbox == '7'.toString()">
+      	<!-- 해양관 -->
+      	AND MVI_VVRMNAME = '해양관'
+      	</if>
+      	
+      	<if test="selbox == '8'.toString()">
+      	<!-- 홍학사 -->
+      	AND MVI_VVRMNAME = '홍학사'
+      	</if>
+      	
+      	<if test="selbox == '9'.toString()">
+      	<!-- 동물한마당 -->
+      	AND MVI_VVRMNAME = '동물한마당'
+      	</if>
+      	
+      	<if test="selbox == '10'.toString()">
+      	<!-- 꼬마동물사 -->
+      	AND MVI_VVRMNAME = '꼬마동물사'
+      	</if>
+      	
+      	<if test="selbox == '11'.toString()">
+      	<!-- 동물농장 -->
+      	AND MVI_VVRMNAME = '동물농장'
+      	</if>
+      	
+      	<if test="selbox == '12'.toString()">
+      	<!-- 열대조류관 -->
+      	AND MVI_VVRMNAME = '열대조류관'
+      	</if>
+      	
+      	<if test="selbox == '13'.toString()">
+      	<!-- 큰물새장 -->
+      	AND MVI_VVRMNAME = '큰물새장'
+      	</if>
+      	
+      	<if test="selbox == '14'.toString()">
+      	<!-- 황새마을 -->
+      	AND MVI_VVRMNAME = '황새마을'
+      	</if>
+      	
+      	<if test="selbox == '15'.toString()">
+      	<!-- 맹금사 -->
+      	AND MVI_VVRMNAME = '맹금사'
+      	</if>
+      	
+      	<if test="selbox == '17'.toString()">
+      	<!-- 공작마을 -->
+      	AND MVI_VVRMNAME = '공작마을'
+      	</if>
+      	
+      	<if test="selbox == '18'.toString()">
+      	<!-- 사슴사 -->
+      	AND MVI_VVRMNAME = '사슴사'
+      	</if>
+      	
+      	<if test="selbox == '19'.toString()">
+      	<!-- 제1AF관 -->
+      	AND MVI_VVRMNAME = '제1AF관'
+      	</if>
+      	
+      	<if test="selbox == '20'.toString()">
+      	<!-- 제2AF관 -->
+      	AND MVI_VVRMNAME = '제2AF관'
+      	</if>
+      	
+      	<if test="selbox == '25'.toString()">
+      	<!-- 제3AF관  -->
+      	AND MVI_VVRMNAME = '제3AF관'
+      	</if>
+      	
+      	<if test="selbox == '21'.toString()">
+      	<!-- 유인원관 -->
+      	AND MVI_VVRMNAME = '유인원관'
+      	</if>
+      	
+      	<if test="selbox == '22'.toString()">
+      	<!-- 호주관  -->
+      	AND MVI_VVRMNAME = '호주관'
+      	</if>
+      	
+      	<if test="selbox == '23'.toString()">
+      	<!-- 야행관 -->
+      	AND MVI_VVRMNAME = '야행관'
+      	</if>
+      	
+      	<if test="selbox == '24'.toString()">
+      	<!-- 대동물관 -->
+      	AND MVI_VVRMNAME = '대동물관'
+      	</if>
+      	
+      	<if test="selbox == '26'.toString()">
+      	<!-- 동양관 -->
+      	AND MVI_VVRMNAME = '동양관'
+      	</if>
+      	
+      	<if test="selbox == '27'.toString()">
+      	<!-- 낙타사 -->
+      	AND MVI_VVRMNAME = '낙타사'
+      	</if>
+      	
+      	<if test="selbox == '28'.toString()">
+      	<!-- 여우사 -->
+      	AND MVI_VVRMNAME = '여우사'
+      	</if>
+      	
+      	<if test="selbox == '29'.toString()">
+      	<!-- 맹수사 -->
+      	AND MVI_VVRMNAME = '맹수사'
+      	</if>
+      	
+      	<if test="selbox == '30'.toString()">
+      	<!-- 우리숲우리동물관 -->
+      	AND MVI_VVRMNAME = '우리숲우리동물관'
+      	</if>
+      	
+      	<if test="selbox == '31'.toString()">
+      	<!-- 곰사 -->
+      	AND MVI_VVRMNAME = '곰사'
+      	</if>
+      	
+      	<if test="selbox == '32'.toString()">
+      	<!-- 남미관 -->
+      	AND MVI_VVRMNAME = '남미관'
+      	</if>
+      	
+      	<if test="selbox == '33'.toString()">
+      	<!-- 종보전교육관 -->
+      	AND MVI_VVRMNAME = '종보전교육관'
+      	</if>
+      	
+      	<if test="selbox == '37'.toString()">
+      	<!-- 들소사 -->
+      	AND MVI_VVRMNAME = '들소사'
+      	</if>
+      	
+      	<if test="selbox == '38'.toString()">
+      	<!-- 번식장 -->
+      	AND MVI_VVRMNAME = '번식장'
+      	</if>
+      	
+      	<if test="selbox == '39'.toString()">
+      	<!-- 동물병원 -->
+      	AND MVI_VVRMNAME = '동물병원'
+      	</if>
+      	
+      	<if test="selbox == '41'.toString()">
+      	<!-- 가금사 -->
+      	AND MVI_VVRMNAME = '가금사'
+      	</if>
+      	
+		<if test="cal_1 != ''">
+		<![CDATA[
+	    AND TO_CHAR(MAI_BIRTHDAY,'YYYY-MM-DD') >= #{cal_1}
+		]]>
+		</if>
+		<if test="cal_2 != ''">
+		<![CDATA[
+	    AND TO_CHAR(MAI_BIRTHDAY,'YYYY-MM-DD') <= #{cal_2}
+		]]>
+		</if>
+		<if test="cal_3 != ''">
+		<![CDATA[
+	    AND TO_CHAR(DAIO_IODATE,'YYYY-MM-DD') >= #{cal_3}
+		]]>
+		</if>
+		<if test="cal_4 != ''">
+		<![CDATA[
+	    AND TO_CHAR(DAIO_IODATE,'YYYY-MM-DD') <= #{cal_4}
+		]]>
+		</if>
+		<if test="cal_5 != ''">
+		<![CDATA[
+	    AND TO_CHAR(MAI_DethDate,'YYYY-MM-DD') >= #{cal_5}
+		]]>
+		</if>
+		<if test="cal_6 != ''">
+		<![CDATA[
+	    AND TO_CHAR(MAI_DethDate,'YYYY-MM-DD') <= #{cal_6}
+		]]>
+		</if>
+		
+		<if test="codeSearch != ''">
+      	AND MAI_AniCode like '%' || #{codeSearch} || '%'
+      	</if>
+      	<if test="schKeyword != ''">
+      	AND MAC_Name like '%' || #{schKeyword} || '%'
+      	</if>
+      	
+      	<!-- <if test="daioPlace != ''">
+      	AND EXISTS (select * FROM DT_ANI_IO WHERE B.DAIO_ANICODE = DAIO_ANICODE AND DATE1 = DAIO_IODATE AND DAIO_IOTYPE = '1' AND DAIO_Place LIKE '%' || #{DAIO_Place} || '%')  AND A.CMN_DEL_STS = 'N'
+      	</if> -->
+      	
+		<!-- <if test="del_chk == 'mipo'">
+      	AND A.CMN_DEL_STS = 'N'
+      	</if> 
+      	
+      	<if test="del_chk == 'poham'">
+      	
+      	</if>  -->
+      	
+      	<if test='del_sts == "N"'>
+			   AND A.CMN_DEL_STS = #{del_sts}
+		</if>
+		
+      	<if test="gunzip == 'gy'">
+      	AND MAI_KnjpType =2
+      	</if> 
+      	
+      	<if test="gunzip == 'gn'">
+      	AND MAI_KnjpType = 1
+      	</if> 
+      	
+      	<if test="sortType == 'number'">
+      	ORDER BY MAC_AniCode1, MAC_AniCode2, MAC_AniCode3, MAC_AniCode4_Seq, MAI_AniCode_Seq
+      	</if>
+      	
+      	<if test="sortType == 'name'">
+      	ORDER BY MAC_Name ASC
+      	</if>
+      	
+      	<if test="sortType == 'bunsik'">
+      	ORDER BY MAI_BIRTHDAY DESC
+      	</if>
+      	
+      	<if test="sortType == 'banip'">
+      	ORDER BY DAIO_IODate DESC
+      	</if>
+      	
+      	<if test="sortType == 'banchul'">
+      	ORDER BY MAI_DethDate DESC
+      	</if>
+</select>
+
+<select id="selectSubGruopList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT 
+		    MAC_ANICLSCODE, MAC_ANICODE1, MAC_ANICODE2, 
+		    MAC_ANICODE3, MAC_ANICODE4_SEQ, MAC_NAME, 
+		    MAC_ENAME, MAC_SNAME, FN_GETCOMCODE_ClS3NAME('200','206',MAC_CITES) AS MAC_CITES, 
+		    FN_GETCOMCODE_ClS3NAME('200','207',MAC_ENDANG) AS MAC_ENDANG , MAC_NATMON, 
+		    FN_GETCOMCODE_ClS3NAME('200','207',MAC_RANK) AS MAC_RANK,
+		    MAC_ORGPLACE, MAC_BRDPERID, MAC_GESTPERID, 
+		    CMN_DEL_STS
+		FROM MF_ANI_CLS
+		WHERE CMN_DEL_STS = 'N'
+		AND MAC_ANICODE1 IS NOT NULL
+		<choose>
+		<when test="(clsType == 1)">
+		AND MAC_ANICODE2 = 0
+		</when>
+		<when test="(clsType == 2)">
+			<if test="mac_anicode1 != ''">
+		AND MAC_ANICODE1 = #{mac_anicode1}
+			</if>
+		AND MAC_ANICODE2 != 0 AND MAC_ANICODE3 = 0
+		</when>
+		<when test="(clsType == 3)">
+			<if test="mac_anicode1 != ''">
+		AND MAC_ANICODE1 = #{mac_anicode1}
+			</if>
+			<if test="mac_anicode2 != ''">
+		AND MAC_ANICODE2 = #{mac_anicode2} 
+			</if>
+		AND MAC_ANICODE3 != 0 AND MAC_ANICODE4_SEQ = 0
+		</when>
+		<when test="(clsType == 4)">
+			<if test="mac_anicode1 != ''">
+		AND MAC_ANICODE1 = #{mac_anicode1}
+			</if>
+			<if test="mac_anicode2 != ''">
+		AND MAC_ANICODE2 = #{mac_anicode2} 
+			</if>
+			<if test="mac_anicode3 != ''">
+		AND MAC_ANICODE3 = #{mac_anicode3} 
+			</if>
+		AND MAC_ANICODE4_SEQ != 0
+		</when>
+		</choose>
+		<if test="subSchKeyword != ''">
+		AND MAC_NAME LIKE '%' || #{subSchKeyword} || '%'
+		</if>
+		ORDER BY MAC_ANICLSCODE
+	</select>
+	
+	<select id="getSubDetailInfo" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+        SELECT  
+            FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '1') || '(' || MAC_ANICODE1 || ')' AS CLS1_NAME,
+            FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '2') || '(' || MAC_ANICODE2 || ')' AS CLS2_NAME,
+            FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '3') || '(' || MAC_ANICODE3 || ')' AS CLS3_NAME,
+            A.*
+		FROM
+		(
+			SELECT 
+			MAC_ANICLSCODE, MAC_ANICODE1, MAC_ANICODE2, 
+		    MAC_ANICODE3, MAC_ANICODE4_SEQ, MAC_NAME, 
+		    MAC_ENAME, MAC_SNAME, FN_GETCOMCODE_ClS3NAME('200','206',MAC_CITES) AS MAC_CITES, 
+		    FN_GETCOMCODE_ClS3NAME('200','207',MAC_ENDANG) AS MAC_ENDANG , MAC_NATMON, 
+		    FN_GETCOMCODE_ClS3NAME('200','205',MAC_RANK) AS MAC_RANK,
+		    MAC_ORGPLACE, MAC_BRDPERID, MAC_GESTPERID, 
+		    CMN_DEL_STS
+			FROM MF_ANI_CLS
+			WHERE MAC_ANICLSCODE = #{mac_aniclscode}
+		)  A
+	</select>
+	
+	<select id="selectBVvrm" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	SELECT MVI_VVRMNO, MVI_VVRMNAME 
+	FROM MF_VVRM_INFO
+	</select>
+	
+	<select id="selectMaxAnum" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	SELECT MAX(MAI_AniCode_Seq)+1 
+	FROM MF_ANI_INFO
+	WHERE MAI_AniClsCode = #{mac_aniclscode}
+	</select>
+	
+	<insert id="insertAniInfo" parameterType="hashmap">
+	insert into JN_JINRYO_RC(JJR_DocNo, JJR_RCDate, JJR_UserID, JJR_JRType, JJR_JRNo, JJR_Cmnt, JJR_RCSts, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID)
+	values(#{DOCNO}, to_date(#{RCDate}, 'yyyy-mm-dd'), #{USERID}, #{JRType}, '', #{CMNT}, '0', 'N',SYSDATE,'TREAT0402',#{USERID},SYSDATE,'TREAT0402',#{USERID})
+	</insert>
+	
+</mapper>

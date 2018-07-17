@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Base0101">
+	<select id="getSystemInfo" resultType="java.util.LinkedHashMap">
+		SELECT MSC_AMS_Name,
+		MSC_LogoNm, MSC_UploadPath
+		FROM MF_SYS_CTRL
+		WHERE MSC_SeqNo = '1'
+	</select>
+	
+	<update id="updateSystemInfo" parameterType="java.util.Map">
+		UPDATE MF_SYS_CTRL
+		SET MSC_AMS_NAME = #{usystem_name}, MSC_LogoNm = #{ulogo_name},
+		MSC_UploadPath = #{uupload_path}
+		WHERE MSC_SeqNo = '1'
+	</update>
+	
+	<select id="selectDptList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	select ROWNUM AS RNUM, MDI_LINKNO, MDI_DPTNAME, CMN_DEL_STS
+	from mf_DPT_INFO
+	</select>
+
+</mapper>

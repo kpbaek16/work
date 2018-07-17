@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CmKjp">
+
+	<select id="selectUserKjpList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT A.* 
+            ,(SELECT MCC_S_NAME FROM MF_COMM_CODE
+              WHERE MCC_L_CODE = '100' AND MCC_M_CODE = '104' AND MCC_S_CODE = A.MUK_RCVTYPE) AS MCC_S_NAME
+		    ,(SELECT MDI_DPTNAME FROM MF_DPT_INFO
+		      WHERE MDI_LINKNO = A.MTI_DPTNO) AS MDI_DPTNAME
+            ,FN_GETCOMCODE_CLS3NAME ('100', '100', MUI_JCCODE) TXT_MUI_JCCODE
+		FROM (
+		    SELECT A.* 
+		    FROM (
+		        SELECT A.MUK_KJID,
+		               A.MUK_RCVTYPE,
+		               A.MUK_KJSEQ,
+		               A.CMN_DEL_STS,
+		               B.MUI_ID,
+		               B.MUI_TEAMNO,
+		               B.MUI_DPTLVLNAME,
+		               B.MUI_DPTLVLCODE,
+		               B.MUI_DPTPOSITCODE,
+		               B.MUI_DPTPOSITNAME,
+		               B.MUI_NAME,
+		               B.MUI_LINCNO,
+		               B.MUI_JCCODE,
+		               (SELECT MTI_DPTNO FROM MF_TEAM_INFO
+		                WHERE MTI_TEAMNO = B.MUI_TEAMNO) AS MTI_DPTNO
+		        FROM   MF_USER_KJP A, MF_USER_INFO B
+		        WHERE  A.MUK_USERID = B.MUI_ID
+		        AND A.CMN_DEL_STS = 'N'
+		        AND B.MUI_ID = #{ss_id}
+		    )  A
+		    ORDER BY   A.MUK_RCVTYPE ASC, A.MUK_KJSEQ ASC
+		)  A
+	</select>
+	
+	<select id="selectUserRcvTypeList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	    SELECT A.* 
+	        ,(SELECT MDI_DPTNAME FROM MF_DPT_INFO
+	          WHERE MDI_LINKNO = A.MTI_DPTNO) AS MDI_DPTNAME
+	    FROM (
+	        SELECT MUK_USERID, MUK_KJID, MUK_RCVTYPE, MUK_KJSEQ, MUI_NAME,
+	               FN_GETCOMCODE_CLS3NAME ('100', '100', MUI_JCCODE) TXT_MUI_JCCODE,
+	               (SELECT MTI_DPTNO FROM MF_TEAM_INFO
+	                WHERE MTI_TEAMNO = UI.MUI_TEAMNO) AS MTI_DPTNO,
+		           (SELECT MTI_TEAMNAME FROM MF_TEAM_INFO
+		            WHERE MTI_TEAMNO = UI.MUI_TEAMNO) AS MTI_TEAMNAME
+	        FROM   MF_USER_KJP UK, MF_USER_INFO UI
+	        WHERE  UK.MUK_KJID = UI.MUI_ID	 
+	        AND UK.CMN_DEL_STS = 'N'
+	        AND UK.MUK_RCVTYPE = #{muk_rcvtype} 
+	        AND UK.MUK_USERID = #{muk_userid} 
+	    )  A
+	</select>
+
+	<update id="deleteUserRcvType" parameterType="hashmap">
+		 DELETE FROM MF_USER_KJP
+		 WHERE MUK_USERID = #{muk_userid} 
+		 AND MUK_KJID = #{muk_kjid} 
+	</update>
+	
+</mapper>

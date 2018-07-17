@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Sta0609">
+
+	<sql id="AniIoList">
+		SELECT DAIO_IOTYPE, DAIO_IODATE,
+			   TO_CHAR (DAIO_IODATE, 'YYYY-MM-DD') TXT_DAIO_IODATE,
+		       FN_GETCOMCODE_CLS3NAME ('200', '250', DAIO_IOTYPE) TXT_DAIO_IOTYPE,
+		       DECODE (DAIO_IOTYPE,
+		               1, FN_GETCOMCODE_CLS3NAME ('200', '251', DAIO_RESN),
+		               FN_GETCOMCODE_CLS3NAME ('200', '252', DAIO_RESN)) TXT_DAIO_RESN,
+		       MDI_DPTNAME,
+		       MTI_TEAMNAME,
+		       DAIO_NATION,
+		       DAIO_PLACE,
+		       DAIO_PRICE,
+		       FN_GETANICLSNAME (MAI_ANICODE, '1') TXT_MAI_ANICODE_1,
+		       MAC_NAME,
+		       MAI_ANICODE,
+		       SUM (CASE WHEN (MAI_SEX IN ('1', '3')) THEN 1 ELSE 0 END) MAI_SEX_M,
+		       SUM (CASE WHEN (MAI_SEX IN ('2', '4')) THEN 1 ELSE 0 END) MAI_SEX_F,
+		       SUM (CASE WHEN (MAI_SEX IN ('5', '6')) THEN 1 ELSE 0 END) MAI_SEX_A,
+		       COUNT (MAI_SEX) CNT_MAI_SEX
+		FROM   MF_ANI_INFO A,
+		       MF_ANI_CLS,
+		       DT_ANI_IO,
+		       MF_VVRM_INFO,
+		       MF_TEAM_INFO,
+		       MF_DPT_INFO
+		WHERE  MAI_ANICODE = DAIO_ANICODE
+		       AND MAI_ANICLSCODE = MAC_ANICLSCODE
+		       AND MAI_VVRMNO = MVI_VVRMNO
+			   AND DAIO_IOTYPE = #{daio_iotype}
+		<if test="cal_1 != ''">
+		<![CDATA[
+			   AND TO_CHAR(DAIO_IODATE,'YYYY-MM-DD') >= #{cal_1}
+		]]>
+		</if>
+		<if test="cal_2 != ''">
+		<![CDATA[
+			   AND TO_CHAR(DAIO_IODATE,'YYYY-MM-DD') <= #{cal_2}
+		]]>
+		</if>
+		       AND MVI_TEAMNO = MTI_TEAMNO
+		       AND MTI_DPTNO = MDI_LINKNO
+		<if test='del_sts == "N"'>
+			   AND A.CMN_DEL_STS = #{del_sts}
+		</if>
+		GROUP BY   DAIO_IOTYPE,
+				   DAIO_IODATE,
+		           MDI_DPTNAME,
+		           MTI_TEAMNAME,
+		           FN_GETANICLSNAME (MAI_ANICODE, '1'),
+		           MAC_NAME,
+		           FN_GETCOMCODE_CLS3NAME ('200', '250', DAIO_IOTYPE),
+		           DECODE (DAIO_IOTYPE,
+		                   1, FN_GETCOMCODE_CLS3NAME ('200', '251', DAIO_RESN),
+		                   FN_GETCOMCODE_CLS3NAME ('200', '252', DAIO_RESN)),
+		           DAIO_NATION,
+		           DAIO_PLACE,
+		           DAIO_PRICE,
+		           MAI_ANICODE
+	</sql>
+
+	<select id="selectAniIoIList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH IOTYPE_LIST AS (
+			<include refid="AniIoList" />
+		)
+		SELECT * FROM IOTYPE_LIST
+		ORDER BY   DAIO_IODATE DESC,
+		           MDI_DPTNAME,
+		           MTI_TEAMNAME,
+		           TXT_MAI_ANICODE_1,
+		           MAC_NAME
+	</select>
+
+	<select id="selectAniIoOList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH IOTYPE_LIST AS (
+			<include refid="AniIoList" />
+		)
+		SELECT * FROM IOTYPE_LIST
+		ORDER BY   DAIO_IODATE DESC,
+		           MDI_DPTNAME,
+		           MTI_TEAMNAME,
+		           TXT_MAI_ANICODE_1,
+		           MAC_NAME
+	</select>
+
+</mapper>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SystemMapper">
+	<select id="getSystemInfo" resultType="java.util.LinkedHashMap">
+		SELECT MSC_AMS_Name, MSC_LogoNm, MSC_UploadPath, MSC_HJPT_Scode
+        FROM MF_SYS_CTRL 
+        WHERE MSC_SeqNo = '1'
+	</select>
+	<update id="updateSystemInfo">
+		UPDATE MF_SYS_CTRL
+		SET MSC_AMS_NAME = #{zoo_name}, MSC_LogoNm = #{file_name},
+			MSC_UploadPath = #{folder_path}, MSC_HJPT_Scode = #{potal_code}
+	</update>
+	<select id="">
+		<choose>
+			<when test="type == 'Category'">
+				SELECT MCC_L_CODE, MCC_L_NAME
+				FROM MF_COMM_CODE
+				WHERE MCC_M_CODE = ' ' AND MCC_S_CODE = ' '
+				ORDER BY MCC_L_CODE;
+			</when>
+			<when test="type == 'Division'">
+				SELECT MCC_L_CODE, MCC_L_NAME, MCC_M_CODE,MCC_M_NAME
+				FROM MF_COMM_CODE
+				WHERE MCC_L_CODE = #{code} AND MCC_S_CODE=' '
+				NOT MCC_M_CODE=' ';
+			</when>
+			<when test="type == 'Section'">
+				SELECT MCC_L_CODE, MCC_L_NAME, MCC_M_CODE,MCC_M_NAME, MCC_S_CODE, MCC_S_NAME, 
+				MCC_SORT_ORDER, NVL(MCC_COM_N1, 0) MCC_COM_N1, MCC_COM_S1
+				FROM MF_COMM_CODE
+				WHERE MCC_L_CODE = #{code} AND MCC_M_CODE = '100' AND NOT MCC_SORT_ORDER = 0
+				ORDER BY MCC_SORT_ORDER ASC;
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+</mapper>

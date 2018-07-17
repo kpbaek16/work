@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Base0110">
+
+	<select id="selectClsList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT MDI_CLSCODE, MDI_NAME
+		FROM MF_DRUG_INFO
+		WHERE CMN_DEL_STS = 'N'
+		AND MDI_DrugCode_Seq = '0'
+		<if test="schType=='grp' and schKeyword != ''">
+   		 AND MDI_NAME LIKE '%' || #{schKeyword} || '%'
+     	</if>  
+		ORDER BY MDI_CLSCODE
+	</select>
+
+	<select id="selectDrugList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT MDI_CLSCODE, MDI_DRUGCODE_SEQ, MDI_NAME, MDI_DRUGCODE, (select NVL(MAX(MDI_DRUGCODE_SEQ)+1,'1') from mf_DRUG_INFO where MDI_CLSCODE = #{MDI_CLSCODE}) as seqNumber
+		FROM MF_DRUG_INFO
+		WHERE MDI_DRUGCODE_SEQ !=0
+		AND CMN_DEL_STS='N'
+		AND MDI_CLSCODE = #{MDI_CLSCODE}
+		<if test="schType=='dru' and schKeyword != ''">
+    	<!-- AND upper(MDI_NAME) LIKE '%' || upper(#{schKeyword}) || '%' -->
+    	AND MDI_NAME LIKE '%' || #{schKeyword} || '%'
+     	</if>  
+		order by MDI_DRUGCODE_SEQ
+	</select>
+
+	<select id="selectClsInfo" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		select MDI_CLSCODE, MDI_NAME
+		from mf_drug_info
+		WHERE CMN_DEL_STS = 'N'
+		and MDI_DrugCode_Seq = '0'
+		and MDI_CLSCODE = #{MDI_CLSCODE}
+		group by MDI_CLSCODE,MDI_NAME
+		order by MDI_CLSCODE
+	</select>
+
+	<select id="selectDrugInfo" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		select MDI_Name, MDI_Type, MDI_Unit,MDI_Purpose, MDI_Cmnt 
+		from MF_DRUG_INFO 
+		where MDI_DRUGCODE  = #{MDI_DRUGCODE}
+		and CMN_DEL_STS='N'
+	</select>
+	
+	<select id="getMaxNumber" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	SELECT NVL(MAX(MDI_ClsCode)+1,'1') as MAXNUM FROM MF_DRUG_INFO
+	</select>
+	
+</mapper>

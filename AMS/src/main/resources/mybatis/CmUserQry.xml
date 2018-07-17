@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CmUserMapper">
+	<select id="getLoginInfo" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+		SELECT A.* 
+		    ,( SELECT MDI_DPTNAME
+		       FROM MF_DPT_INFO
+		       WHERE MDI_LINKNO = A.MTI_DPTNO) MDI_DPTNAME
+		    ,( SELECT DECODE(COUNT(MAG_GRPCODE),0,'MU',MAX(MAG_GRPCODE)) MAG_GRPCODE
+		       FROM MF_AUTH_GRP
+		       WHERE MAG_ID = A.MUI_ID 
+		       AND TO_CHAR(SYSDATE,'YYYYMMDD') BETWEEN MAG_ST_DAY AND MAG_ED_DAY ) MAG_GRPCODE
+            ,(  SELECT DECODE(COUNT(*),0,'N','Y') 
+                FROM MF_VVRM_MGR
+                WHERE MVM_USERID = A.MUI_ID) IS_VM
+		FROM
+		(
+		        SELECT 
+		           M.MUI_ID, M.MUI_TEAMNO, M.MUI_NAME, 
+		           M.MUI_DPTLVLCODE, M.MUI_DPTLVLNAME, M.MUI_DPTPOSITCODE, 
+		           M.MUI_DPTPOSITNAME, M.MUI_OFFCTELNO, M.MUI_JCCODE, 
+		           M.MUI_HPTELNO, M.MUI_LINCNO, M.MUI_MAINBIZ, 
+		           M.MUI_LGKEYSET, M.CMN_DEL_STS, M.CMN_MAK_DATE, 
+		           M.CMN_MAK_PROG, M.CMN_MAK_ID, M.CMN_UPD_DATE, 
+		           M.CMN_UPD_PROG, M.CMN_UPD_ID, M.TEMP,
+		           SU.MSU_USERID, SU.MSU_ID, SU.MSU_PWD, 
+		           SU.MSU_PMSLVL, SU.MSU_APRV_YN
+		           ,(SELECT MTI_DPTNO
+		             FROM MF_TEAM_INFO
+		             WHERE MTI_TEAMNO = M.MUI_TEAMNO) MTI_DPTNO
+		        FROM MF_USER_INFO M, MF_SYS_USER SU
+		        WHERE M.MUI_ID = SU.MSU_ID(+)
+		        AND M.CMN_DEL_STS ='N'
+				AND M.MUI_ID = #{sid}
+		) A 
+	</select>
+	
+	<select id="getUserInfo" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	    SELECT A.* 
+		    ,( SELECT MDI_DPTNAME
+		       FROM MF_DPT_INFO
+		       WHERE MDI_LINKNO = A.MTI_DPTNO) MDI_DPTNAME
+		    ,( SELECT DECODE(COUNT(MAG_GRPCODE),0,'MU',MAX(MAG_GRPCODE)) MAG_GRPCODE
+		       FROM MF_AUTH_GRP
+		       WHERE MAG_ID = A.MUI_ID 
+		       AND TO_CHAR(SYSDATE,'YYYYMMDD') BETWEEN MAG_ST_DAY AND MAG_ED_DAY ) MAG_GRPCODE
+	    FROM
+	    (
+	        SELECT A.* 
+	            ,(SELECT MTI_DPTNO FROM MF_TEAM_INFO
+	             WHERE MTI_TEAMNO = A.MUI_TEAMNO) AS MTI_DPTNO
+	        FROM (
+			        SELECT SU.MSU_USERID, SU.MSU_ID, SU.MSU_PWD, 
+			           SU.MSU_PMSLVL, SU.MSU_APRV_YN, SU.CMN_DEL_STS, 
+			           SU.CMN_MAK_DATE, SU.CMN_MAK_PROG, SU.CMN_MAK_ID, 
+			           SU.CMN_UPD_DATE, SU.CMN_UPD_PROG, SU.CMN_UPD_ID,
+			           UI.MUI_ID, UI.MUI_TEAMNO, UI.MUI_NAME, UI.MUI_DPTLVLCODE,
+			           UI.MUI_DPTLVLNAME, UI.MUI_DPTPOSITCODE, UI.MUI_DPTPOSITNAME, UI.MUI_OFFCTELNO, UI.MUI_JCCODE,
+			           UI.MUI_HPTELNO, UI.MUI_LINCNO, UI.MUI_MAINBIZ, 
+			           UI.MUI_LGKEYSET
+			        FROM MF_SYS_USER SU, MF_USER_INFO UI 
+			        WHERE SU.MSU_ID = UI.MUI_ID 
+			        AND UI.CMN_DEL_STS ='N'
+			        AND SU.CMN_DEL_STS ='N'
+			        AND SU.MSU_USERID =  #{userid} 
+			        AND SU.MSU_PWD =  #{pwd}
+	        )  A
+	    )  A
+	</select>
+	
+	<select id="selectMenuPmsList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT MUP_USERID, MUP_PROGID, nvl(MUP_SRCHLVL, 0) as MUP_SRCHLVL, nvl(MUP_UPDLVL, 0) as MUP_UPDLVL
+		FROM MF_USER_PMS UP, MF_SYS_USER SU
+		WHERE UP.MUP_USERID = SU.MSU_ID
+		AND MUP_USERID =   SU.MSU_ID
+		AND SU.MSU_USERID =   #{userid} 
+		AND UP.CMN_DEL_STS = 'N'
+		AND EXISTS (
+		    SELECT 1
+		    FROM MF_COMM_CODE CC
+		    WHERE MCC_L_CODE = 'MENU01' AND MCC_S_CODE = UP.MUP_PROGID
+		)
+		ORDER BY MUP_PROGID
+	</select>
+		
+	<insert id="createUserInfo" parameterType="hashmap">
+		INSERT INTO MF_USER_INFO(
+			MUI_ID, MUI_NAME, MUI_DPTLVLCODE, MUI_DPTLVLNAME, 
+			MUI_DPTPOSITCODE, MUI_DPTPOSITNAME, MUI_LGKEYSET, CMN_DEL_STS, 
+			CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID) 
+		VALUES ( 
+			#{ss_id}, #{mui_name}, #{mui_dptlvlcode}, #{mui_dptlvlname}, 
+			#{mui_dptpositcode}, #{mui_dptpositname}, #{mui_lgkeyset}, 'N', 
+			SYSDATE, 'createSysUser', #{ss_id}	
+		)
+	</insert>
+	
+	<update id="createSysUser" parameterType="hashmap">
+		MERGE INTO MF_SYS_USER d
+		USING (
+			Select MUI_ID
+			From MF_USER_INFO
+			WHERE MUI_ID = #{ss_id}
+		) s
+		ON
+		(
+		    d.MSU_USERID = #{ss_userid}
+		)
+		WHEN MATCHED
+		THEN
+			UPDATE SET MSU_PWD = #{pwd}
+				, MSU_APRV_YN = 'Y'
+				, CMN_UPD_PROG = 'createSysUser'
+				, CMN_UPD_DATE = SYSDATE
+		WHEN NOT MATCHED
+		THEN
+			INSERT (
+			  MSU_ID, MSU_USERID, MSU_PWD, MSU_PMSLVL,
+			  MSU_APRV_YN, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_ID)
+			VALUES (
+			   #{ss_id}, #{ss_userid},  #{pwd}, '10',
+			  'Y', 'N', SYSDATE, 'createSysUser', #{ss_userid}, #{ss_userid})
+	</update>
+	
+	<!-- 아이디 중복검사 쿼리 -->
+	<select id="idCheck" resultType="java.lang.String" parameterType="java.lang.String">
+	select MSU_USERID from MF_SYS_USER where MSU_USERID = #{ss_userid}
+	</select>
+
+	<!-- 삭제된 직원정보 -->
+	<select id="getDelUserInfo" resultType="java.lang.String" parameterType="java.lang.String">
+	select MUI_ID from MF_USER_INFO where MUI_ID = #{sid} AND CMN_DEL_STS ='Y'
+	</select>
+	
+	<!-- 메인 페이지 공지사항 Top 7 가져오기 -->
+	<select id="getRecentBoard" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+	select BBI_DOCNO, BBI_TIT,to_char(CMN_MAK_DATE,'YYYY.MM.DD') AS CMN_MAK_DATE
+	from BZ_BBS_INFO
+    where BBI_BBSTYPE = 2
+    <![CDATA[
+    and rownum < 8
+    ]]>
+   	and CMN_DEL_STS = 'N'
+	</select>
+	
+	<!-- 메인 통합검색  -->
+	<select id="selectSayukSearch" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+	SELECT SDJ01_DOCNO, SDJ01_BZCLS1 ,SDJ01_CMNT, TO_CHAR( CMN_MAK_DATE ,'YYYY-MM-DD') as CMN_MAK_DATE
+	FROM SY_DAILY_JNL01
+	
+	<if test="optType == 'sayuk'">
+	WHERE SDJ01_CMNT LIKE '%' || #{mainSearch} || '%'
+	AND CMN_DEL_STS = 'N'
+	</if>
+	ORDER BY CMN_MAK_DATE
+	</select>
+	
+	<select id="selectJinryoSearch" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+	select JJJ_DOCNO, TO_CHAR(JJJ_SDATE ,'YYYY-MM-DD') as JJJ_SDATE, JJJ_JRDZZNAME, JJJ_JRCMNT
+	FROM JN_JINRYO_JNL
+	<if test="optType == 'jinryo'">
+	WHERE JJJ_JRCMNT LIKE '%' || #{mainSearch} || '%'
+	AND CMN_DEL_STS = 'N'
+	</if>
+	ORDER BY JJJ_SDATE
+	</select>
+	
+	<select id="selectBokunSearch" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+	select JBJ_DOCNO, TO_CHAR( JBJ_JNLDATE ,'YYYY-MM-DD') as JBJ_JNLDATE, JBJ_CMNT
+	FROM JN_BOKN_JNL
+	<if test="optType == 'bokun'">
+	WHERE JBJ_CMNT LIKE '%' || #{mainSearch} || '%'
+	AND CMN_DEL_STS = 'N'
+	</if>
+	ORDER BY JBJ_JNLDATE
+	</select>
+	
+	<!-- 메인 페이지 동물 검색  -->
+	<select id="selectMainSch" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+	SELECT MAI_AniCode, MAC_NAME, MAI_BNAME, FN_GETCOMCODE_ClS3NAME('200','202',MAI_SEX) as MAI_GENDER, V.MVI_VVRMNAME,A.MAI_VVRMNO, 
+	FN_GETCOMCODE_ClS3NAME('200','201',MAI_CURSTS) as MAI_CURSTS 
+	FROM MF_ANI_INFO A LEFT JOIN (SELECT DAIO_ANICODE, MAX(DAIO_IODATE) AS DATE2 FROM DT_ANI_IO WHERE DAIO_IOTYPE = '2' GROUP BY DAIO_ANICODE) C on (C.DAIO_ANICODE = MAI_ANICODE), 
+	(SELECT DAIO_ANICODE, MAX(DAIO_IODATE) AS DATE1 FROM DT_ANI_IO WHERE DAIO_IOTYPE = '1' GROUP BY DAIO_ANICODE) B, MF_ANI_CLS , MF_VVRM_INFO V
+	WHERE MAI_AniClsCode = MAC_AniClsCode 
+	AND B.DAIO_ANICODE = MAI_ANICODE 
+	AND MAI_VVRMNO = V.MVI_VVRMNO
+	 AND A.CMN_DEL_STS = 'N'
+      <choose>
+		<when test="schType=='All' and schKeyword != ''">
+		 <!-- AND MAC_Name like '%' || #{schKeyword} || '%' or MAI_VvrmNo like '%' || #{schKeyword} || '%' -->
+		 AND (upper(MAC_Name) LIKE '%' || upper(#{schKeyword}) || '%' OR  upper(MVI_VVRMNAME) LIKE '%' || upper(#{schKeyword}) || '%' )  
+		</when>
+		
+		<when test="schType=='Name' and schKeyword != ''">
+		 AND MAC_Name like '%' || #{schKeyword} || '%'
+		</when>
+		
+		<when test="schType=='Vvrm' and schKeyword != ''">
+		 AND V.MVI_VVRMNAME like '%' || #{schKeyword} || '%'
+		</when>
+		
+		<when test="schType=='Code' and schKeyword != ''">
+		 AND MAI_ANICODE like '%' || #{schKeyword} || '%'
+		</when>
+		</choose>
+		 ORDER BY A.CMN_UPD_DATE
+	</select>
+	
+	<select id="getDocKjInfo" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+    select CNT_X, CNT_P, CNT_E, CNT_NOTI from 
+    (
+    SELECT count(*) as CNT_X
+		FROM BZ_SIGN_LIST A
+		WHERE A.CMN_DEL_STS = 'N'
+		  AND BSL_KIND = 'Y'
+      AND EXISTS(SELECT * FROM BZ_SIGN_USER B 
+							WHERE A.BSL_DOCNO = B.BSU_DOCNO 
+							  AND A.BSL_DOCTYPE = B.BSU_DOCTYPE 
+							  AND A.BSL_KJNO = B.BSU_KJNO 
+							  AND BSU_KJ_USERID = #{ss_id}
+							  AND BSU_RCVTYPE = 'RCV'
+								AND BSU_KJPRCSTS = 'Y'
+							  )
+      AND BSL_RSLTSTS = ' '
+      ) a,
+          (
+    SELECT count(*) as CNT_P
+		FROM BZ_SIGN_LIST A
+		WHERE A.CMN_DEL_STS = 'N'
+		  AND BSL_KIND = 'Y'
+      AND EXISTS(SELECT * FROM BZ_SIGN_USER B 
+							WHERE A.BSL_DOCNO = B.BSU_DOCNO 
+							  AND A.BSL_DOCTYPE = B.BSU_DOCTYPE 
+							  AND A.BSL_KJNO = B.BSU_KJNO 
+							  AND BSU_KJ_USERID = #{ss_id}
+							  AND BSU_RCVTYPE = 'RCV'
+								AND BSU_KJPRCSTS = 'E'
+							  )
+      AND BSL_PROCSTS = '3'
+      ) b,
+        (
+    SELECT count(*) as CNT_E
+		FROM BZ_SIGN_LIST A
+		WHERE A.CMN_DEL_STS = 'N'
+		  AND BSL_KIND = 'Y'
+      AND EXISTS(SELECT * FROM BZ_SIGN_USER B 
+							WHERE A.BSL_DOCNO = B.BSU_DOCNO 
+							  AND A.BSL_DOCTYPE = B.BSU_DOCTYPE 
+							  AND A.BSL_KJNO = B.BSU_KJNO 
+							  AND BSU_KJ_USERID = #{ss_id}
+							  AND BSU_RCVTYPE = 'RCV'
+							  )
+      AND BSL_RSLTSTS = 'Y'
+      ) c,
+      (
+    SELECT count(*) as CNT_NOTI
+		FROM BZ_SIGN_LIST A
+		WHERE A.CMN_DEL_STS = 'N'
+		  AND BSL_KIND = 'Y'
+     AND EXISTS(SELECT * FROM BZ_SIGN_USER B 
+							WHERE A.BSL_DOCNO = B.BSU_DOCNO 
+							  AND A.BSL_DOCTYPE = B.BSU_DOCTYPE 
+							  AND A.BSL_KJNO = B.BSU_KJNO 
+							  AND BSU_KJ_USERID = #{ss_id}
+							  AND BSU_RCVTYPE = 'NOTI'
+							  )
+      ) d
+	</select>
+
+	<select id="selectDocKjList" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+         SELECT BSL_DOCNO, BSL_DOCTYPE, BSL_KJNO, 
+                BSL_DOCCMNT, BSL_PROCSTS, BSL_RSLTSTS
+                ,(SELECT TO_CHAR(MAX(BSU_KJDATE),'YYYY.MM.DD') FROM BZ_SIGN_USER
+                  WHERE BSU_DOCNO = SL.BSL_DOCNO
+                  AND BSU_DOCTYPE = SL.BSL_DOCTYPE) AS BSU_KJDATE
+         FROM BZ_SIGN_LIST SL
+         WHERE BSL_DOCTYPE != '4'
+         AND SL.CMN_DEL_STS = 'N'
+         AND EXISTS (SELECT 1 FROM BZ_SIGN_USER
+             WHERE BSU_DOCNO = SL.BSL_DOCNO
+             AND BSU_DOCTYPE = SL.BSL_DOCTYPE
+             AND BSU_KJNO = SL.BSL_KJNO
+             AND BSU_RCVTYPE = 'RCV'
+         )
+         AND BSL_USER_ID = #{ss_id}
+		<![CDATA[
+         AND ROWNUM <= 7
+		]]>
+         ORDER BY BSU_KJDATE DESC
+	</select>
+	
+</mapper>

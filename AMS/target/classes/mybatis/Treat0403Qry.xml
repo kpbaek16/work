@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Treat0403">
+	<select id="selectJnlList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	SELECT rownum as SEQ, e.* FROM (
+	select JJR_DocNo, JJJ_DocNo, to_char(JJR_RCDate,'yyyy-mm-dd') as JJR_RCDate,
+		   to_char(nvl(JJJ_SDate, JJR_RCDate), 'yyyy-mm-dd') as JJJ_SDate,
+		   nvl(JJJ_JRType, '') as JJJ_JRType, MAI_TeamNo, fn_getDptName(MAI_TeamNo) as DptName,
+		   MAI_VvrmNo, fn_getVvrmName(MAI_VvrmNo) as VvrmName, BAA_AniCode, MAC_Name, MAI_BName,
+		   MAI_Sex, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as SexName, nvl(JJJ_JRDzzName, ' ') as JJJ_JRDzzName,
+		   nvl(JJJ_JRCmnt, ' ') as JJJ_JRCmnt, fn_getComCode_Cls3Name('300', '302', nvl(JJJ_JRSts, ' ')) as JRStsName,
+		   JJR_Cmnt, JJR_JRType, fn_getComCode_Cls3Name('300', '300', nvl(JJR_JRType, ' ')) as JrTypeName, JJJ_JRDzzType, JJJ_Insu, JJJ_ReqOrga,
+		   nvl(JJJ_EDate, JJR_RCDate) as JJJ_EDate, JJJ_JRSts, JJJ_SUserID, JJJ_EUserID,
+		   fn_getComCode_Cls3Name('300', '303', nvl(JJJ_JRDzzType, ' ')) as JRDzzTypeName
+	FROM JN_JINRYO_RC left join JN_JINRYO_JNL on JJJ_RCNo = JJR_DocNo, MF_ANI_CLS, MF_ANI_INFO, BZ_ANI_ATCH, MF_VVRM_INFO
+   where MAI_AniClsCode = MAC_AniClsCode 
+	 AND MAI_AniCode    = BAA_AniCode
+	 AND JJR_DocNo      = BAA_DocNo 
+	 AND MAI_VvrmNo 	= MVI_VvrmNo
+	 and (JJR_JRNo is null
+	or (
+	 1=1
+	 <if test="jinryoKind != ''">
+		AND JJJ_JRType = #{jinryoKind}
+	</if>
+	<if test="jinryoStatus != ''">
+		AND JJJ_JRSts = #{jinryoStatus}
+	</if>
+	<if test="nameKeyword != ''">
+		AND MAC_Name LIKE '%' || #{nameKeyword} || '%'
+	</if>
+	<if test="numKeyword != ''">
+		AND JJJ_DocNo like '%' || #{numKeyword} || '%'
+	</if>
+	<if test="vvrmKeyword != ''">
+		AND MVI_VVRMNAME LIKE '%' || #{vvrmKeyword} || '%'
+	</if>
+	<if test="cal_1 != ''">
+		AND JJJ_SDate <![CDATA[>=]]> to_date(#{cal_1},'yyyy-mm-dd') 
+	</if>
+	<if test="cal_2 != ''">
+		AND JJJ_SDate <![CDATA[<=]]> to_date(#{cal_2} || '23:59:59','YYYY-MM-DD hh24:mi:ss')
+	</if>
+	  ))
+	order by JJR_RCDate, JJJ_DocNo 
+	) e
+	</select>
+	<select id="select_JRDateDtlList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		select JJD_DocNo, to_char(JJD_JRDate, 'yyyy-mm-dd') as JJD_JRDate, JJD_UserID, JJD_ChebSts, JJD_KmsaSts, JJD_Cmnt, fn_getUserName(JJD_UserID) as UserName,
+			   CASE WHEN NOT (
+			   					select count(*) 
+			   					  from JN_JINRYO_DATE_KY
+ 								  where JJDKY_JRNo = JJD_DocNo 
+ 								  	AND to_char(JJD_JRDate, 'yyyy-mm-dd') = to_char(JJDKY_KSDateYY, 'yyyy-mm-dd')
+ 							 ) = 0 
+			   		THEN '1' ELSE '0' END as KYLstCHK,
+			   	CASE WHEN NOT 
+			   				 (
+			   				 	select count(*) 
+			   				 	  from JN_JINRYO_DATE_CB,MF_DRUG_INFO 
+			   				 	 where JJDCB_DrugCode = MDI_DrugCode 
+			   				 	   and JJDCB_JRNo = JJD_DocNo 
+			   				 	   AND to_char(JJD_JRDate, 'yyyy-mm-dd') = to_char(JJDCB_CBDate, 'yyyy-mm-dd')
+			   				 ) = 0 
+			   		THEN '1' ELSE '0' END as CBDataCHK,
+			   	CASE WHEN NOT 
+			   				 (
+			   				 	select count(*) 
+			   				 	  from BZ_DATA_ATCH
+			   				 	 where BDA_DocNo = JJD_DocNo 
+			   				 	   AND to_char(JJD_JRDate, 'yyyy-mm-dd') = to_char(BDA_BzDate, 'yyyy-mm-dd')
+			   				 ) = 0 
+			   		THEN '1' ELSE '0' END as FileCHK
+		  from JN_JINRYO_DATE
+		 where JJD_DocNo=#{JJJ_DOCNO}
+		 order by JJD_DocNo, JJD_JRDate
+	</select>
+	<select id="get_JnlDateCHK" resultType="Integer" parameterType="hashmap">
+		select count(*) cnt
+		  from JN_JINRYO_DATE
+		 where JJD_DocNo=#{JJJ_DOCNO}
+		   and to_char(JJD_JRDate, 'yyyy-mm-dd') = #{DTLDay}
+	</select>
+	
+	<select id="SelectFileList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		select BDA_DOCNO, BDA_BZCLS1, BDA_BZCLS2, BDA_BZCLS3, BDA_BZSEQNO, BDA_BZDATE, BDA_CNTNTTYPE, BDA_ATCHFILE, BDA_CMNT,
+       			case when BDA_UPPATH like 'AddDoc%' then UploadPath || 'AddDoc/'
+       			     when not BDA_UPPATH like '%AddDoc%' then BDA_UPPATH || 'AddDoc/' 
+            		 else BDA_UPPATH end as BDA_UPPATH
+  		  from (SELECT BDA_DOCNO, BDA_BZCLS1, BDA_BZCLS2, BDA_BZCLS3, BDA_BZSEQNO, BDA_BZDATE, BDA_CNTNTTYPE, BDA_ATCHFILE, BDA_CMNT,    
+                CASE when BDA_UPPATH like '%/' or BDA_UPPATH like '%\' then BDA_UPPATH else BDA_UPPATH || '/' end as BDA_UPPATH 
+                FROM BZ_DATA_ATCH),
+      		   (SELECT CASE when MSC_UploadPath like '%/' or MSC_UploadPath like '%\' then MSC_UploadPath else MSC_UploadPath || '/' end as UploadPath
+      		    FROM MF_SYS_CTRL WHERE MSC_SeqNo = '1')
+		 where BDA_DocNo = #{DOCNO}
+		<if test="DTLDay != ''">
+		    AND TO_CHAR(BDA_BzDate,'YYYY-MM-DD') = #{DTLDay}
+		</if>
+		<if test="ClsType != ''">
+			AND BDA_BzCls1 = #{ClsType}
+		</if>
+	</select>
+	
+	<select id="select_FileList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT rownum as SEQ, e.* FROM (
+		select BDA_AtchFile, BDA_Cmnt, BDA_UpPath, BDA_CntntType,
+			   to_char(nvl(BDA_BzDate, to_date('1900-01-01','YYYY-MM-DD')), 'YYYY-MM-DD') as BDA_BzDate
+		  from BZ_DATA_ATCH
+		 where BDA_DocNo=#{JJJ_DOCNO}
+		   and BDA_BzCls1='JR001'
+		) e
+	</select>
+	<select id="select_KYList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT rownum as SEQ, e.* FROM (
+		select to_char(JJDKY_KSDateYY,'YYYY-MM-DD') as JJDKY_KSDateYY, to_char(nvl(JJDKY_KSDate, to_date('1900-01-01','YYYY-MM-DD')), 'YYYY-MM-DD') as JJDKY_KSDate,
+			   JJDKY_KSNo, fn_getComCode_Cls3Name(500, 501, JJDKY_KSNo) as KSName, 
+			   JJDKY_KSSts, JJDKY_Cmnt
+		  from JN_JINRYO_DATE_KY
+		 where JJDKY_JRNo=#{JJJ_DOCNO}
+		 order by JJDKY_KSDateYY, JJDKY_KSNo
+		 ) e
+	</select>
+	<select id="select_CBList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT rownum as SEQ, e.* FROM (
+		select JJDCB_DocNo, JJDCB_JRNo, JJDCB_DrugCode, JJDCB_UseVol, JJDCB_Cmnt, MDI_Name, MDI_Unit,
+			   fn_getComCode_Cls3Name('600', '602', MDI_Unit) as UnitName,
+			   to_char(nvl(JJDCB_CBDate, to_date('1900-01-01','YYYY-MM-DD')), 'YYYY-MM-DD') as JJDCB_CBDate
+		  from JN_JINRYO_DATE_CB, MF_DRUG_INFO
+		 where JJDCB_DrugCode = MDI_DrugCode
+		   and JJDCB_JRNo     = #{JJJ_DOCNO}
+		 order by JJDCB_CBDate, MDI_DrugCode
+		 ) e
+	</select>
+	<select id="selectJnlDateKYList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		select JJDKY_DocNo ,JJDKY_KSNo from JN_JINRYO_DATE_KY where JJDKY_KSType = '1' AND JJDKY_JRNo = #{JJJ_DOCNO}
+		<if test="DTLDay != ''">
+			AND to_char(JJDKY_KSDateYY,'YYYY-MM-DD') = #{DTLDay}
+		</if>
+	</select>
+	<select id="getJnlInfo" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	SELECT rownum as SEQ, e.* FROM (
+	select JJR_DocNo, JJJ_DocNo, to_char(JJR_RCDate,'yyyy-mm-dd') as JJR_RCDate,
+		   to_char(nvl(JJJ_SDate, JJR_RCDate), 'yyyy-mm-dd') as JJJ_SDate,
+		   to_char(nvl(JJJ_EDate, JJR_RCDate), 'yyyy-mm-dd') as JJJ_EDate,
+		   nvl(JJJ_JRType, '') as JJJ_JRType, MAI_TeamNo, fn_getDptName(MAI_TeamNo) as DptName,
+		   MAI_VvrmNo, fn_getVvrmName(MAI_VvrmNo) as VvrmName, BAA_AniCode, MAC_Name, MAI_BName,
+		   MAI_Sex, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as SexName, nvl(JJJ_JRDzzName, ' ') as JJJ_JRDzzName,
+		   nvl(JJJ_JRCmnt, ' ') as JJJ_JRCmnt, fn_getComCode_Cls3Name('300', '302', nvl(JJJ_JRSts, ' ')) as JRStsName,
+		   JJR_Cmnt, JJR_JRType, fn_getComCode_Cls3Name('300', '300', nvl(JJR_JRType, ' ')) as JrTypeName, JJJ_JRDzzType, JJJ_Insu, JJJ_ReqOrga,
+		   nvl(JJJ_JRSts,'1') as JJJ_JRSts, JJJ_SUserID, JJJ_EUserID,
+		   fn_getComCode_Cls3Name('300', '303', nvl(JJJ_JRDzzType, ' ')) as JRDzzTypeName
+	FROM JN_JINRYO_RC left join JN_JINRYO_JNL on JJJ_RCNo = JJR_DocNo, MF_ANI_CLS, MF_ANI_INFO, BZ_ANI_ATCH, MF_VVRM_INFO
+   where MAI_AniClsCode = MAC_AniClsCode 
+	 AND MAI_AniCode    = BAA_AniCode
+	 AND JJR_DocNo      = BAA_DocNo 
+	 AND MAI_VvrmNo 	= MVI_VvrmNo
+	 AND JJR_DocNo = #{DOCNO}
+	<if test="JJJ_DOCNO != ''">
+		AND JJJ_DocNo = #{JJJ_DOCNO}
+	</if>
+	order by JJR_RCDate, JJJ_DocNo 
+	) e
+	</select>
+	<select id="getBuPSInfo" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	SELECT rownum as SEQ, e.* FROM (
+	select fn_getAniClsName(MAI_AniCode, '1') as Cls1Name, MAC_Name, MAI_BName,
+       	   MAI_Sex, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as SexName, MAI_AniCode,
+           to_char(MAI_Birthday,'yyyy-mm-dd') as MAI_Birthday, PDR_PSPlace, PDR_BukmReq,
+           PBR_DocNo, to_char(PBR_BuDate,'yyyy-mm-dd') as PBR_BuDate, PBR_BUDzzName, PBR_KSReslt
+      from MF_ANI_INFO, MF_ANI_CLS, PS_DETH_REPT, PS_BUKM_REPT
+     where MAI_AniCode    = PDR_AniCode
+       and MAC_AniClsCode = MAI_AniClsCode 
+       and PBR_ReqDocNo   = PDR_DocNo
+       and PBR_DocNo      = #{JJJ_DOCNO}
+	) e
+	</select>
+	<select id="getFileSeq" resultType="Integer" parameterType="String">
+		select NVL(max(BDA_BzSeqNo),0)+1 from BZ_DATA_ATCH where BDA_DocNo = #{value} AND BDA_BzCls1 = 'JR001' 
+	</select>
+	<select id="getAniINFO" resultType="java.util.LinkedHashMap"  parameterType="String">
+	select MAI_AniCode, MAI_AniClsCode, MAI_BName, MAI_Sex, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as SexName,
+		   MAI_VvrmNo, fn_getVvrmName(MAI_VvrmNo) as VvrmName,to_char(MAI_Birthday,'yyyy-mm-dd') as MAI_Birthday, MAC_Name, MAC_EName, 
+		   to_char(nvl(DAIO_IODate, to_date('1900-01-01','YYYY-MM-DD')), 'YYYY-MM-DD') as DAIO_IODate, DAIO_Place,
+		   CASE WHEN MAI_Birthday IS NOT NULL THEN
+		   TRUNC(MONTHS_BETWEEN(SYSDATE, MAI_Birthday)/12) || '년 ' ||
+		   TRUNC(MONTHS_BETWEEN(SYSDATE, MAI_Birthday) -
+		   TRUNC(MONTHS_BETWEEN(SYSDATE, MAI_Birthday)/12) * 12) || '개월' ELSE '' END AS CURAGE
+ 	  from MF_ANI_CLS, 
+ 	  	   MF_ANI_INFO left join ( select DAIO_AniCode, DAIO_IOType, DAIO_IODate, DAIO_Place from DT_ANI_IO where DAIO_IOType = '1' and DAIO_AniCode = #{value} and rownum <![CDATA[<=]]> 1 order by DAIO_IODate asc ) IOInf  
+	 	   on DAIO_AniCode = MAI_AniCode 
+	 where MAI_AniCode = #{value}
+	   and MAI_AniClsCode = MAC_AniClsCode 
+	</select>
+	<update id="updateJnlInfo" parameterType="hashmap">
+		 update JN_JINRYO_JNL set JJJ_SDate = to_date(#{SDATE},'yyyy-mm-dd'), JJJ_EDate = to_date(#{EDATE},'yyyy-mm-dd'), 
+		 						  JJJ_JRType = #{JRTYPE}, JJJ_RCNo = #{DOCNO}, JJJ_JRDzzName = #{JRDZZNAME}, 
+		 						  JJJ_JRCmnt = #{JRCMNT}, JJJ_JRDzzType = #{JRDZZTYPE}, JJJ_JRSts = #{JRSTS},
+		 						  JJJ_Insu = #{INSU}, JJJ_ReqOrga = #{REQORGA},
+		 						  CMN_DEL_STS='N', CMN_UPD_DATE=SYSDATE, CMN_UPD_PROG='TREAT0403', CMN_UPD_ID=#{USERID}
+							where JJJ_DocNo = #{JJJ_DOCNO}
+	</update>
+	<update id="updateJnlDateInfo" parameterType="hashmap">
+		update JN_JINRYO_DATE set JJD_UserID = #{USERID}, JJD_Cmnt = #{J_CMNT}, CMN_DEL_STS='N', CMN_UPD_DATE=SYSDATE, CMN_UPD_PROG='TREAT0403', CMN_UPD_ID=#{USERID} where JJD_DocNo = #{JJJ_DOCNO} and JJD_JRDate = to_date(#{DTLDay}, 'yyyy-mm-dd') 
+	</update>
+	<update id="updateRctInfo" parameterType="hashmap">
+		update JN_JINRYO_RC set JJR_JRNo = #{JJJ_DOCNO}, JJR_RCSts = #{RCSTS}, CMN_DEL_STS='N', CMN_UPD_DATE=SYSDATE, CMN_UPD_PROG='TREAT0403', CMN_UPD_ID=#{USERID} where JJR_DocNo = #{DOCNO}
+	</update>
+	<update id="updateRctJnlDelete" parameterType="hashmap">
+		Update JN_JINRYO_RC set JJR_JRNo = '' where JJR_JRNo = #{JJJ_DOCNO}
+	</update>
+	<insert id="insertJnlDateInfo" parameterType="hashmap">
+		insert into JN_JINRYO_DATE ( JJD_DocNo, JJD_JRDate, JJD_UserID, JJD_ChebSts, JJD_KmsaSts, JJD_Cmnt, JJD_DrugCmnt, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID)
+							values (#{JJJ_DOCNO}, to_date(#{DTLDay}, 'yyyy-mm-dd'), #{USERID}, '', '', #{J_CMNT}, '', 'N', SYSDATE,'TREAT0403',#{USERID},SYSDATE,'TREAT0403',#{USERID})
+	</insert>
+	<insert id="insertJnlInfo" parameterType="hashmap">
+		  insert into JN_JINRYO_JNL ( JJJ_DocNo, JJJ_SDate, JJJ_EDate, JJJ_JRType, JJJ_RCNo, JJJ_JRDzzName, JJJ_JRCmnt, JJJ_JRDzzType, JJJ_JRSts, JJJ_Insu, JJJ_ReqOrga, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID)
+			 			  values(#{JJJ_DOCNO}, to_date(#{SDATE}, 'yyyy-mm-dd'), to_date(#{EDATE}, 'yyyy-mm-dd'), #{JRTYPE}, #{DOCNO}, 
+			 			  #{JRDZZNAME},#{JRCMNT},#{JRDZZTYPE},#{JRSTS},#{INSU},#{REQORGA}, 'N', SYSDATE,'TREAT0403',#{USERID},SYSDATE,'TREAT0403',#{USERID})
+	</insert>
+	<insert id="insertFileInfo" parameterType="hashmap">
+		INSERT INTO BZ_DATA_ATCH(BDA_DOCNO, BDA_BZCLS1, BDA_BZCLS2, BDA_BZCLS3, BDA_BZSEQNO, BDA_BZDATE, BDA_CNTNTTYPE, BDA_UPPATH, BDA_ATCHFILE, BDA_CMNT, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID)
+		VALUES(#{BDA_DOCNO}, #{BDA_BZCLS1}, #{BDA_BZCLS2}, #{BDA_BZCLS3}, #{BDA_BZSEQNO}, to_date(#{DTLDay}, 'yyyy-mm-dd'), #{BDA_CNTNTTYPE}, #{BDA_UPPATH}, #{BDA_ATCHFILE}, #{BDA_CMNT}, 'N', SYSDATE, #{CMN_MAK_PROG}, #{CMN_MAK_ID}, SYSDATE, #{CMN_UPD_PROG}, #{CMN_UPD_ID})
+	</insert>
+	<delete id="deleteFileInfo" parameterType="hashmap">
+		delete from BZ_DATA_ATCH where BDA_DocNo = #{JJJ_DOCNO} 
+		<if test="DTLDay != ''">
+			AND TO_CHAR(BDA_BzDate,'YYYY-MM-DD') = #{DTLDay}
+		</if>
+		<if test="ClsType != ''">
+			AND BDA_BzCls1 = #{ClsType} 
+		</if>
+	</delete>
+	<delete id="deleteKSDataInfo" parameterType="hashmap">
+		 delete from ${TableNAME} where ${ColumnNAME} = #{DOCNO}
+	</delete>
+	<delete id="deleteKSInfo" parameterType="hashmap">
+		delete from JN_JINRYO_DATE_KY where JJDKY_JRNo = #{JJJ_DOCNO}
+		<if test="DTLDay != ''">
+			AND to_char(JJDKY_KSDateYY,'YYYY-MM-DD') = #{DTLDay}
+		</if>
+	</delete>
+	<delete id="deleteCBInfo" parameterType="hashmap">
+		delete from JN_JINRYO_DATE_CB where JJDCB_JRNo = #{JJJ_DOCNO}
+		<if test="DTLDay != ''">
+			AND to_char(JJDCB_CBDate,'YYYY-MM-DD') = #{DTLDay}
+		</if>
+	</delete>
+	<delete id="deleteJnlDateInfo" parameterType="hashmap">
+		 delete from JN_JINRYO_DATE where JJD_DocNo = #{JJJ_DOCNO}
+		<if test="DTLDay != ''">
+			AND to_char(JJD_JRDate,'YYYY-MM-DD') = #{DTLDay}
+		</if>
+	</delete>
+	<delete id="deleteJnlInfo" parameterType="hashmap">
+		  delete from JN_JINRYO_JNL where JJJ_DocNo = #{JJJ_DOCNO}
+	</delete>
+</mapper>

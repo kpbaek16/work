@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CmFileMapper">
+
+	<select id="selectMaxImgDocno" resultType="String" parameterType="java.util.LinkedHashMap">
+		SELECT MAX(DOCNO) AS MAX_DOCNO
+		FROM
+		(
+		    SELECT #{bzcls1} || TO_CHAR(SYSDATE,'YYYYMMDD') || '-' || MAX(LPAD(SUBSTR(BII_DOCNO,-5)+1,5,0)) AS DOCNO
+		    FROM BZ_IMG_INFO
+		    WHERE SUBSTR(BII_DOCNO,1,10) = #{bzcls1} || TO_CHAR(SYSDATE,'YYYYMMDD')
+		    UNION ALL
+		    SELECT #{bzcls1} || TO_CHAR(SYSDATE,'YYYYMMDD') || '-' || '00001' FROM DUAL
+		)
+	</select>
+	
+	<select id="selectStFileList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT * FROM (
+		    SELECT MAX(BII_DOCNO) OVER (ORDER BY BII_DOCNO DESC) MAX_BII_DOCNO,
+		        BII_DOCNO, BII_BZCLS1, BII_BZCLS2, 
+		        BII_BZCLS3, BII_BZSEQNO, BII_BZDATE, 
+		        BII_IMGTYPE, BII_ANICODE, BII_IMGFILENM, 
+		        BII_IMGFILETTL, BII_RPSNTTYPE
+		    FROM BZ_IMG_INFO
+		    WHERE BII_BZCLS1 = 'ST'
+		    AND BII_ANICODE = #{bii_anicode}
+		    AND CMN_DEL_STS = 'N'
+		) A
+		WHERE A.BII_DOCNO = MAX_BII_DOCNO
+	</select>
+	
+	<select id="selectStFileInfo" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+		    BII_DOCNO, BII_BZCLS1, BII_BZCLS2, 
+		    BII_BZCLS3, BII_BZSEQNO, BII_BZDATE, 
+		    BII_IMGTYPE, BII_ANICODE, BII_IMGFILENM, 
+		    BII_IMGFILETTL, BII_RPSNTTYPE
+		FROM BZ_IMG_INFO
+		WHERE  BII_DOCNO      = #{bii_docno}
+		AND    BII_BZCLS1     = 'ST'
+		AND    BII_BZCLS2     = 'N'
+		AND    BII_BZCLS3     = 'N'
+		AND    BII_BZSEQNO    = #{bii_bzseqno}	
+	</select>
+    
+	<insert id="insertFileInfo" parameterType="hashmap">
+		INSERT INTO BZ_IMG_INFO (
+			BII_DOCNO, BII_BZCLS1, BII_BZCLS2, BII_BZCLS3, BII_BZSEQNO, BII_BZDATE, 
+			BII_IMGTYPE, BII_ANICODE, BII_IMGFILENM, 
+			BII_IMGFILETTL, BII_RPSNTTYPE, CMN_DEL_STS, 
+			CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID)
+		VALUES(#{BII_DOCNO}, #{BII_BZCLS1}, #{BII_BZCLS2}, #{BII_BZCLS3}, #{BII_BZSEQNO}, SYSDATE,
+			#{BII_IMGTYPE}, #{BII_ANICODE}, #{BII_IMGFILENM}, 
+			#{BII_IMGFILETTL}, #{BII_RPSNTTYPE}, 'N', 
+			SYSDATE, 'insertFileInfo', #{ss_userid})
+	</insert>
+	
+	<insert id="insertSTMaxDocList" parameterType="hashmap">
+		INSERT INTO BZ_IMG_INFO (
+		    BII_DOCNO, BII_BZCLS1, BII_BZCLS2, BII_BZCLS3, BII_BZSEQNO, BII_BZDATE, 
+		    BII_IMGTYPE, BII_ANICODE, BII_IMGFILENM, 
+		    BII_IMGFILETTL, BII_RPSNTTYPE, CMN_DEL_STS, CMN_MAK_ID, CMN_UPD_ID, CMN_MAK_DATE, CMN_UPD_DATE)
+		SELECT #{bii_docno}, BII_BZCLS1, BII_BZCLS2, BII_BZCLS3, BII_BZSEQNO, BII_BZDATE, 
+		    BII_IMGTYPE, BII_ANICODE, BII_IMGFILENM
+		    , DECODE(BII_BZSEQNO, 1, #{imgfilettl_1}, 2, #{imgfilettl_2}, 3, #{imgfilettl_3}, 4, #{imgfilettl_4}, 5, #{imgfilettl_5})
+		    , DECODE(#{rpsnttype_chkId}, BII_BZSEQNO, '1'), 'N', CMN_MAK_ID, #{ss_userid}, CMN_MAK_DATE, SYSDATE  
+		FROM (
+		    SELECT MAX(BII_DOCNO) OVER (ORDER BY BII_DOCNO DESC) MAX_BII_DOCNO,
+		        BII_DOCNO, BII_BZCLS1, BII_BZCLS2, BII_BZCLS3, BII_BZSEQNO, BII_BZDATE, 
+		        BII_IMGTYPE, BII_ANICODE, BII_IMGFILENM, 
+		        BII_IMGFILETTL, BII_RPSNTTYPE, CMN_MAK_ID, CMN_MAK_DATE
+		    FROM BZ_IMG_INFO
+		    WHERE BII_BZCLS1 = 'ST'
+		    AND BII_ANICODE =  #{bii_anicode}
+		    AND CMN_DEL_STS = 'N'
+		<if test="list != null">
+			AND BII_BZSEQNO NOT IN 
+			<foreach collection="list" item="item" index="index" separator="," open="(" close=")">
+				#{item}
+			</foreach>
+		</if>
+			) A
+		WHERE A.BII_DOCNO = MAX_BII_DOCNO
+	</insert>
+	
+	<update id="updateStFileInfo" parameterType="hashmap">
+		UPDATE BZ_IMG_INFO
+		SET    CMN_UPD_PROG = 'updateStFileInfo',
+		<if test="bii_imgtype != null">
+			   BII_IMGTYPE    = #{bii_imgtype},
+		</if>
+		<if test="bii_imgfilenm != null">
+		       BII_IMGFILENM  = #{bii_imgfilenm},
+		</if>
+		<if test="bii_imgfilettl != null">
+		       BII_IMGFILETTL = #{bii_imgfilettl},
+		</if>
+		<if test="bii_rpsnttype != null">
+		       BII_RPSNTTYPE  = #{bii_rpsnttype},
+		</if>
+			   CMN_UPD_ID = #{ss_userid},
+			   CMN_UPD_DATE = SYSDATE
+		WHERE  BII_DOCNO      = #{bii_docno}
+		AND    BII_BZCLS1     = 'ST'
+		AND    BII_BZCLS2     = 'N'
+		AND    BII_BZCLS3     = 'N'
+		AND    BII_BZSEQNO    = #{bii_bzseqno}	
+	</update>
+	
+	<select id="selectSyFileList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT * FROM (
+		    SELECT 
+		        BII_DOCNO, BII_BZCLS1, BII_BZCLS2, 
+		        BII_BZCLS3, BII_BZSEQNO, BII_BZDATE, 
+		        BII_IMGTYPE, BII_ANICODE, BII_IMGFILENM, 
+		        BII_IMGFILETTL, BII_RPSNTTYPE
+		    FROM BZ_IMG_INFO
+		    WHERE BII_DOCNO = #{bii_docno}
+		    AND BII_BZCLS1 = 'SY'
+		    AND BII_BZCLS2 = 'SY002007'
+		    AND CMN_DEL_STS = 'N'
+		) A
+	</select>
+	
+	<select id="selectSsFileList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT * FROM (
+		    SELECT 
+		        BII_DOCNO, BII_BZCLS1, BII_BZCLS2, 
+		        BII_BZCLS3, BII_BZSEQNO, BII_BZDATE, 
+		        BII_IMGTYPE, BII_ANICODE, BII_IMGFILENM, 
+		        BII_IMGFILETTL, BII_RPSNTTYPE
+		    FROM BZ_IMG_INFO
+		    WHERE BII_DOCNO = #{bii_docno}
+		    AND BII_BZCLS1 = 'SS'
+		    AND BII_BZCLS2 = 'SY003004'
+		    AND CMN_DEL_STS = 'N'
+		) A
+	</select>
+	
+	<select id="selectSyFileInfo" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+		    BII_DOCNO, BII_BZCLS1, BII_BZCLS2, 
+		    BII_BZCLS3, BII_BZSEQNO, BII_BZDATE, 
+		    BII_IMGTYPE, BII_ANICODE, BII_IMGFILENM, 
+		    BII_IMGFILETTL, BII_RPSNTTYPE
+		FROM BZ_IMG_INFO
+		WHERE  BII_DOCNO      = #{bii_docno}
+		AND    BII_BZCLS1     = 'SY'
+		AND    BII_BZCLS2     = 'SY002007'
+		AND    BII_BZCLS3     = 'N'
+		AND    BII_BZSEQNO    = #{bii_bzseqno}	
+	</select>
+
+	<select id="selectSsFileInfo" parameterType="hashmap" resultType="hashmap">
+		SELECT 
+		    BII_DOCNO, BII_BZCLS1, BII_BZCLS2, 
+		    BII_BZCLS3, BII_BZSEQNO, BII_BZDATE, 
+		    BII_IMGTYPE, BII_ANICODE, BII_IMGFILENM, 
+		    BII_IMGFILETTL, BII_RPSNTTYPE
+		FROM BZ_IMG_INFO
+		WHERE  BII_DOCNO      = #{bii_docno}
+		AND    BII_BZCLS1     = 'SS'
+		AND    BII_BZCLS2     = 'SY003004'
+		AND    BII_BZCLS3     = 'N'
+		AND    BII_BZSEQNO    = #{bii_bzseqno}	
+	</select>
+
+	<update id="createSyImgList" parameterType="hashmap">
+        MERGE INTO BZ_IMG_INFO II
+        USING (
+            SELECT #{bii_docno} AS BII_DOCNO, #{bii_bzseqno} AS BII_BZSEQNO
+            FROM  DUAL
+        ) SY
+        ON
+        (
+            II.BII_BZCLS1 = 'SY'
+            AND II.BII_BZCLS2 =  'SY002007'
+            AND II.CMN_DEL_STS = 'N'
+            AND II.BII_DOCNO = SY.BII_DOCNO
+            AND II.BII_BZSEQNO=SY.BII_BZSEQNO
+         )
+        WHEN MATCHED
+        THEN
+            UPDATE SET CMN_UPD_PROG = 'createSyImgList'
+            	, CMN_UPD_ID = #{ss_userid}
+                , CMN_UPD_DATE = SYSDATE
+		<if test="bii_imgfilenm != null">
+                , BII_IMGTYPE    = #{bii_imgtype}
+                , BII_IMGFILENM  = #{bii_imgfilenm}
+		</if>
+                , BII_IMGFILETTL = #{bii_imgfilettl}
+        WHEN NOT MATCHED
+        THEN
+	        INSERT (
+	            BII_DOCNO, BII_BZCLS1, BII_BZCLS2, BII_BZCLS3, BII_BZSEQNO, BII_BZDATE, 
+	            BII_IMGTYPE, BII_IMGFILENM,BII_IMGFILETTL
+	            , CMN_DEL_STS, CMN_MAK_ID, CMN_MAK_DATE)
+	        VALUES (SY.BII_DOCNO,'SY','SY002007','N',SY.BII_BZSEQNO,SYSDATE
+	            ,#{bii_imgtype},#{bii_imgfilenm},#{bii_imgfilettl}
+	            ,'N',#{ss_userid},SYSDATE)                
+	</update>
+                
+	<update id="createSsImgList" parameterType="hashmap">
+        MERGE INTO BZ_IMG_INFO II
+        USING (
+            SELECT #{bii_docno} AS BII_DOCNO, #{bii_bzseqno} AS BII_BZSEQNO
+            FROM  DUAL
+        ) SS
+        ON
+        (
+            II.BII_BZCLS1 = 'SS'
+            AND II.BII_BZCLS2 =  'SY003004'
+            AND II.CMN_DEL_STS = 'N'
+            AND II.BII_DOCNO = SS.BII_DOCNO
+            AND II.BII_BZSEQNO = SS.BII_BZSEQNO
+         )
+        WHEN MATCHED
+        THEN
+            UPDATE SET CMN_UPD_PROG = 'createSyImgList'
+            	, CMN_UPD_ID = #{ss_userid}
+                , CMN_UPD_DATE = SYSDATE
+		<if test="bii_imgfilenm != null">
+                , BII_IMGTYPE    = #{bii_imgtype}
+                , BII_IMGFILENM  = #{bii_imgfilenm}
+		</if>
+                , BII_IMGFILETTL = #{bii_imgfilettl}
+        WHEN NOT MATCHED
+        THEN
+	        INSERT (
+	            BII_DOCNO, BII_BZCLS1, BII_BZCLS2, BII_BZCLS3, BII_BZSEQNO, BII_BZDATE, 
+	            BII_IMGTYPE, BII_IMGFILENM,BII_IMGFILETTL
+	            , CMN_DEL_STS, CMN_MAK_ID, CMN_MAK_DATE)
+	        VALUES (SS.BII_DOCNO,'SS','SY003004','N',SS.BII_BZSEQNO,SYSDATE
+	            ,#{bii_imgtype},#{bii_imgfilenm},#{bii_imgfilettl}
+	            ,'N',#{ss_userid},SYSDATE)                
+	</update>
+	
+	<update id="updateSyFileInfo" parameterType="hashmap">
+		UPDATE BZ_IMG_INFO
+		SET    CMN_UPD_PROG = 'updateSyFileInfo',
+		<if test="bii_imgtype != null">
+			   BII_IMGTYPE    = #{bii_imgtype},
+		</if>
+		<if test="bii_imgfilenm != null">
+		       BII_IMGFILENM  = #{bii_imgfilenm},
+		</if>
+		<if test="bii_imgfilettl != null">
+		       BII_IMGFILETTL = #{bii_imgfilettl},
+		</if>
+			   CMN_UPD_ID = #{ss_userid},
+			   CMN_UPD_DATE = SYSDATE
+		WHERE  BII_DOCNO      = #{bii_docno}
+		AND    BII_BZCLS1     = 'SY'
+		AND    BII_BZCLS2     = 'SY002007'
+		AND    BII_BZCLS3     = 'N'
+		AND    BII_BZSEQNO    = #{bii_bzseqno}	
+	</update>
+	
+	
+	<update id="updateSsFileInfo" parameterType="hashmap">
+		UPDATE BZ_IMG_INFO
+		SET    CMN_UPD_PROG = 'updateSsFileInfo',
+		<if test="bii_imgtype != null">
+			   BII_IMGTYPE    = #{bii_imgtype},
+		</if>
+		<if test="bii_imgfilenm != null">
+		       BII_IMGFILENM  = #{bii_imgfilenm},
+		</if>
+		<if test="bii_imgfilettl != null">
+		       BII_IMGFILETTL = #{bii_imgfilettl},
+		</if>
+			   CMN_UPD_ID = #{ss_userid},
+			   CMN_UPD_DATE = SYSDATE
+		WHERE  BII_DOCNO      = #{bii_docno}
+		AND    BII_BZCLS1     = 'SS'
+		AND    BII_BZCLS2     = 'SY003004'
+		AND    BII_BZCLS3     = 'N'
+		AND    BII_BZSEQNO    = #{bii_bzseqno}	
+	</update>
+
+</mapper>
