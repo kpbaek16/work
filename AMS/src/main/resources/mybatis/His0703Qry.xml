@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="His0703">
+
+	<sql id="VvrmHisList">
+        SELECT A.* 
+            ,( SELECT MDI_DPTNAME
+               FROM MF_DPT_INFO
+               WHERE MDI_LINKNO = A.MTI_DPTNO) MDI_DPTNAME
+        FROM
+        (
+            SELECT A.* 
+                ,( SELECT MTI_DPTNO
+                   FROM MF_TEAM_INFO
+                   WHERE MTI_TEAMNO = A.MVI_TEAMNO) MTI_DPTNO
+                ,( SELECT MCC_S_NAME
+                   FROM MF_COMM_CODE
+                   WHERE MCC_L_CODE = '700' AND MCC_M_CODE='703' AND MCC_S_CODE = A.HVI_LOGTYPE) TXT_HVI_LOGTYPE
+            FROM 
+            (
+                SELECT 
+                    H.HVI_SEQ, H.HVI_VVRMNO, H.CMN_DEL_STS, 
+                    H.CMN_MAK_DATE, H.CMN_MAK_PROG, H.CMN_MAK_ID, 
+                    H.CMN_UPD_DATE, H.CMN_UPD_PROG, H.CMN_UPD_ID, 
+                    H.HVI_LOGTYPE, H.HVI_BFR_VL, H.HVI_AFT_VL, 
+                    H.HVI_LOGDATE
+                    , VI.MVI_VVRMNO, VI.MVI_VVRMNAME, VI.MVI_TEAMNO
+                FROM AMS.HS_VVRM_INFO H, MF_VVRM_INFO VI
+                WHERE H.HVI_VVRMNO = VI.MVI_VVRMNO(+)
+				<if test="cal_1 != ''">
+				<![CDATA[
+					   AND TO_CHAR(H.HVI_LOGDATE,'YYYY-MM-DD') >= #{cal_1}
+				]]>
+				</if>
+				<if test="cal_2 != ''">
+				<![CDATA[
+					   AND TO_CHAR(H.HVI_LOGDATE,'YYYY-MM-DD') <= #{cal_2}
+				]]>
+				</if>
+ 				<if test="sch_mvi_vvrmname != ''">
+				<![CDATA[
+                       AND VI.MVI_VVRMNAME LIKE '%' || #{sch_mvi_vvrmname} || '%'
+				]]>
+				</if>
+ 		    ) A    
+		) A   
+	</sql>
+
+	<select id="selectVvrmHisList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH HIS_LIST AS (
+			<include refid="VvrmHisList" />
+		)
+        SELECT A.*
+            ,DECODE(HVI_LOGTYPE,'1',HVI_BFR_VL
+                               ,'2',( SELECT MTI_TEAMNAME
+                                       FROM MF_TEAM_INFO
+                                       WHERE MTI_TEAMNO = A.HVI_BFR_VL)
+                               ,'3',( SELECT MDI_DPTNAME
+                                       FROM MF_DPT_INFO
+                                       WHERE MDI_LINKNO = A.HVI_BFR_VL)
+                               ,'4',( SELECT MUI_NAME
+                                       FROM MF_USER_INFO
+                                       WHERE MUI_ID = A.HVI_BFR_VL)) TXT_HVI_BFR_VL
+            ,DECODE(HVI_LOGTYPE,'1',HVI_AFT_VL
+                               ,'2',( SELECT MTI_TEAMNAME
+                                       FROM MF_TEAM_INFO
+                                       WHERE MTI_TEAMNO = A.HVI_AFT_VL)
+                               ,'3',( SELECT MDI_DPTNAME
+                                       FROM MF_DPT_INFO
+                                       WHERE MDI_LINKNO = A.HVI_AFT_VL)
+                               ,'4',( SELECT MUI_NAME
+                                       FROM MF_USER_INFO
+                                       WHERE MUI_ID = A.HVI_AFT_VL)) TXT_HVI_AFT_VL
+            ,(SELECT MUI_NAME FROM MF_USER_INFO A 
+              WHERE EXISTS ( SELECT 1 FROM MF_SYS_USER WHERE MSU_USERID = A.CMN_UPD_ID )
+             ) UPD_MUI_NAME
+            ,TO_CHAR(A.HVI_LOGDATE,'YYYY-MM-DD') TXT_HVI_LOGDATE
+        FROM HIS_LIST A
+        ORDER BY HVI_LOGDATE DESC
+	</select>
+
+</mapper>

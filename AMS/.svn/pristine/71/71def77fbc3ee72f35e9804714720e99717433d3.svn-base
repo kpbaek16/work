@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="TestUserMapper">
+	<select id="getLoginInfo" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+		SELECT MUI_ID, MUI_NAME
+		FROM MF_USER_INFO 
+		WHERE MUI_ID = #{sid}
+	</select>
+	
+	<select id="getUserInfo" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+		SELECT A.* 
+		    ,(SELECT MDI_DPTNAME FROM MF_DPT_INFO
+		     WHERE MDI_LINKNO = A.MUI_LINCNO) AS MDI_DPTNAME
+		FROM (
+		        SELECT SU.MSU_USERID, SU.MSU_ID, SU.MSU_PWD, 
+		           SU.MSU_PMSLVL, SU.MSU_APRV_YN, SU.CMN_DEL_STS, 
+		           SU.CMN_MAK_DATE, SU.CMN_MAK_PROG, SU.CMN_MAK_ID, 
+		           SU.CMN_UPD_DATE, SU.CMN_UPD_PROG, SU.CMN_UPD_ID,
+		           UI.MUI_TEAMNO, UI.MUI_NAME, UI.MUI_DPTLVLCODE,
+		           UI.MUI_DPTLVLNAME, UI.MUI_DPTPOSITCODE, UI.MUI_DPTPOSITNAME, UI.MUI_OFFCTELNO, UI.MUI_JCCODE,
+		           UI.MUI_HPTELNO, UI.MUI_LINCNO, UI.MUI_MAINBIZ, 
+		           UI.MUI_LGKEYSET
+		        FROM MF_SYS_USER SU, MF_USER_INFO UI 
+		        WHERE SU.MSU_ID = UI.MUI_ID 
+		        AND UI.CMN_DEL_STS ='N'
+		        AND SU.CMN_DEL_STS ='N'
+		        AND SU.MSU_USERID =  #{userid} 
+		        AND SU.MSU_PWD =  #{pwd}
+		)  A
+	</select>
+	
+	<insert id="createUserInfo" parameterType="hashmap">
+		INSERT INTO MF_USER_INFO(
+			MUI_ID, MUI_NAME, MUI_DPTLVLCODE, MUI_DPTLVLNAME, 
+			MUI_DPTPOSITCODE, MUI_DPTPOSITNAME, MUI_LGKEYSET, CMN_DEL_STS, 
+			CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID) 
+		VALUES ( 
+			#{ss_id}, #{mui_name}, #{mui_dptlvlcode}, #{mui_dptlvlname}, 
+			#{mui_dptpositcode}, #{mui_dptpositname}, #{mui_lgkeyset}, 'N', 
+			SYSDATE, 'createSysUser', #{ss_id}	
+		)
+	</insert>
+	
+	<update id="createSysUser" parameterType="hashmap">
+		MERGE INTO MF_SYS_USER d
+		USING (
+			Select MUI_ID
+			From MF_USER_INFO
+			WHERE MUI_ID = #{ss_id}
+		) s
+		ON
+		(
+		    d.MSU_USERID = #{ss_userid}
+		)
+		WHEN MATCHED
+		THEN
+			UPDATE SET MSU_PWD = #{pwd}
+				, MSU_APRV_YN = 'Y'
+				, CMN_UPD_PROG = 'createSysUser'
+				, CMN_UPD_DATE = SYSDATE
+		WHEN NOT MATCHED
+		THEN
+			INSERT (
+			  MSU_ID, MSU_USERID, MSU_PWD, MSU_PMSLVL,
+			  MSU_APRV_YN, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_ID)
+			VALUES (
+			   #{ss_id}, #{ss_userid},  #{pwd}, '10',
+			  'Y', 'N', SYSDATE, 'createSysUser', #{ss_userid}, #{ss_userid})
+	</update>
+	
+	<select id="idCheck" resultType="java.lang.String" parameterType="java.lang.String">
+	select MSU_USERID from MF_SYS_USER where MSU_USERID = #{ss_userid}
+	</select>
+	
+</mapper>

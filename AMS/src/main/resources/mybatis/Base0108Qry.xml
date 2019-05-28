@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Base0108">
+
+	<select id="selectAniClsList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT 
+		    MAC_ANICLSCODE, MAC_ANICODE1, MAC_ANICODE2, 
+		    MAC_ANICODE3, MAC_ANICODE4_SEQ, MAC_NAME, 
+		    MAC_ENAME, MAC_SNAME, MAC_CITES, 
+		    MAC_ENDANG, MAC_NATMON, MAC_RANK, 
+		    MAC_ORGPLACE, MAC_BRDPERID, MAC_GESTPERID, 
+		    CMN_DEL_STS
+		FROM MF_ANI_CLS
+		WHERE CMN_DEL_STS = 'N'
+		AND MAC_ANICODE1 IS NOT NULL
+		<choose>
+		<when test="(clsType == 1)">
+		AND MAC_ANICODE2 = 0
+		</when>
+		<when test="(clsType == 2)">
+			<if test="mac_anicode1 != ''">
+		AND MAC_ANICODE1 = #{mac_anicode1}
+			</if>
+		AND MAC_ANICODE2 != 0 AND MAC_ANICODE3 = 0
+		</when>
+		<when test="(clsType == 3)">
+			<if test="mac_anicode1 != ''">
+		AND MAC_ANICODE1 = #{mac_anicode1}
+			</if>
+			<if test="mac_anicode2 != ''">
+		AND MAC_ANICODE2 = #{mac_anicode2} 
+			</if>
+		AND MAC_ANICODE3 != 0 AND MAC_ANICODE4_SEQ = 0
+		</when>
+		<when test="(clsType == 4)">
+			<if test="mac_anicode1 != ''">
+		AND MAC_ANICODE1 = #{mac_anicode1}
+			</if>
+			<if test="mac_anicode2 != ''">
+		AND MAC_ANICODE2 = #{mac_anicode2} 
+			</if>
+			<if test="mac_anicode3 != ''">
+		AND MAC_ANICODE3 = #{mac_anicode3} 
+			</if>
+		AND MAC_ANICODE4_SEQ != 0
+		</when>
+		</choose>
+		<if test="schKeyword != ''">
+		AND MAC_NAME LIKE '%' || #{schKeyword} || '%'
+		</if>
+		ORDER BY MAC_ANICLSCODE
+	</select>
+	
+	<select id="selectAniClsInfo" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+        SELECT  
+            FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '1') || '(' || MAC_ANICODE1 || ')' AS CLS1_NAME,
+            FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '2') || '(' || MAC_ANICODE2 || ')' AS CLS2_NAME,
+            FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '3') || '(' || MAC_ANICODE3 || ')' AS CLS3_NAME,
+            A.*
+		FROM
+		(
+			SELECT 
+			    MAC_ANICLSCODE, MAC_ANICODE1, MAC_ANICODE2, 
+			    MAC_ANICODE3, MAC_ANICODE4_SEQ, MAC_NAME, 
+			    MAC_ENAME, MAC_SNAME, MAC_CITES, 
+			    MAC_ENDANG, MAC_NATMON, MAC_RANK, 
+			    MAC_ORGPLACE, MAC_BRDPERID, MAC_GESTPERID, 
+			    CMN_DEL_STS
+			FROM MF_ANI_CLS
+			WHERE MAC_ANICLSCODE = #{mac_aniclscode}
+		)  A
+	</select>
+	
+	<select id="selectBdInspList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT A.* 
+		    ,(SELECT MCC_S_NAME FROM MF_COMM_CODE
+		      WHERE MCC_L_CODE = '500' AND MCC_M_CODE = '502' AND MCC_S_CODE = A.MBI_BDINSPCODE) AS MCC_S_NAME
+		    ,(SELECT MCC_COM_S1 FROM MF_COMM_CODE
+		      WHERE MCC_L_CODE = '500' AND MCC_M_CODE = '502' AND MCC_S_CODE = A.MBI_BDINSPCODE) AS MCC_COM_S1
+		FROM
+		(
+		    SELECT BI.MBI_ANICLSCODE, BI.MBI_BDINSPCODE, BI.MBI_MEAN, BI.MBI_STDDEVI,
+		           BI.CMN_DEL_STS, BI.CMN_MAK_DATE, BI.CMN_MAK_ID, BI.CMN_MAK_PROG
+		    FROM
+		       MF_BDINSP_ITEM BI, MF_ANI_CLS AC 
+		    WHERE BI.MBI_ANICLSCODE = AC.MAC_ANICLSCODE
+		    AND BI.CMN_DEL_STS = 'N'
+		    AND BI.MBI_ANICLSCODE =  #{mac_aniclscode}
+		) A   
+		ORDER BY A.MBI_BDINSPCODE ASC
+	</select>
+	
+	<select id="selectBdItemList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT	 MCC_S_CODE, MCC_S_NAME, MCC_COM_S1,
+			    (SELECT DECODE(COUNT(*),0,'N','Y') FROM MF_BDINSP_ITEM
+			     WHERE MBI_ANICLSCODE = #{mac_aniclscode} AND MBI_BDINSPCODE = CC.MCC_S_CODE) CHK_YN
+		 FROM	 MF_COMM_CODE CC
+		 WHERE	 MCC_L_CODE = '500' 
+		 AND MCC_M_CODE = '502'
+		 AND MCC_S_CODE != ' '
+		 AND CMN_DEL_STS = 'N' 
+		<if test="schKeyword != ''">
+		AND MCC_S_NAME LIKE '%' || #{schKeyword} || '%'
+		</if>
+		 ORDER BY MCC_S_CODE
+	</select>
+	
+	<update id="deleteBdInspList" parameterType="hashmap">
+		DELETE FROM MF_BDINSP_ITEM A
+		WHERE A.MBI_ANICLSCODE = #{mac_aniclscode} 
+		AND A.MBI_BDINSPCODE NOT IN 
+		<foreach collection="list" item="item" index="index" separator="," open="(" close=")">
+			#{item}
+		</foreach>
+		AND EXISTS (
+		        SELECT MCC_S_CODE FROM
+		        MF_COMM_CODE
+		        WHERE CMN_DEL_STS = 'N'     
+		        AND MCC_L_CODE = '500' 
+		        AND MCC_M_CODE = '502' 
+		        AND MCC_S_CODE != ' '
+		<if test="schKeyword != ''">
+		        AND MCC_S_NAME LIKE '%' || #{schKeyword} || '%'
+		</if>
+		        AND A.MBI_BDINSPCODE = MCC_S_CODE
+		    ) 
+	</update>
+	
+	<update id="createBdInspList" parameterType="hashmap">
+        MERGE INTO MF_BDINSP_ITEM BI
+        USING (
+             SELECT     MCC_S_CODE, MCC_S_NAME, MCC_COM_S1
+             FROM     MF_COMM_CODE
+             WHERE     MCC_L_CODE = '500' 
+             AND MCC_M_CODE = '502'
+             AND MCC_S_CODE != ' '
+             AND CMN_DEL_STS = 'N' 
+			 AND MCC_S_CODE IN 
+			<foreach collection="list" item="item" index="index" separator="," open="(" close=")">
+				#{item}
+			</foreach>
+        ) CC
+        ON
+        (
+            BI.MBI_BDINSPCODE = CC.MCC_S_CODE
+            AND BI.MBI_ANICLSCODE = #{mac_aniclscode}
+        )
+        WHEN MATCHED
+        THEN
+            UPDATE SET CMN_DEL_STS = 'N'
+                , CMN_UPD_PROG = 'createBdInspList'
+                , CMN_UPD_DATE = SYSDATE
+                , CMN_UPD_ID = #{ss_userid}
+        WHEN NOT MATCHED
+        THEN
+            INSERT (
+               MBI_ANICLSCODE, MBI_BDINSPCODE, CMN_DEL_STS, 
+               CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID) 
+            VALUES ( #{mac_aniclscode}, CC.MCC_S_CODE, 'N',
+                SYSDATE, 'createBdInspList', #{ss_userid})	
+	</update>
+
+	<update id="updateBdInsp" parameterType="hashmap">
+        UPDATE MF_BDINSP_ITEM 
+        SET MBI_MEAN = #{mbi_mean}
+        	, MBI_STDDEVI = #{mbi_stddevi}
+			, CMN_UPD_PROG = 'updateBdInspList'
+			, CMN_UPD_DATE = SYSDATE
+			, CMN_UPD_ID = #{ss_userid}
+		WHERE MBI_ANICLSCODE = #{mbi_aniclscode}
+		AND MBI_BDINSPCODE = #{mbi_bdinspcode}
+	</update>
+
+	<select id="selectCommBdItemList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT	 MCC_S_CODE,
+		         MCC_SORT_ORDER,
+				 MCC_S_NAME,
+				 MCC_COM_S1
+		FROM	 MF_COMM_CODE
+		WHERE CMN_DEL_STS = 'N'	 
+		AND MCC_L_CODE = '500' 
+		AND MCC_M_CODE = '502' 
+		AND MCC_S_CODE != ' '	
+		<if test="schKeyword != ''">
+		AND MCC_S_NAME LIKE '%' || #{schKeyword} || '%'
+		</if>
+		ORDER BY MCC_SORT_ORDER	
+	</select>
+	
+	<select id="selectBdItemInfo" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+        SELECT  MCC_L_CODE, MCC_M_CODE, MCC_S_CODE,
+                MCC_SORT_ORDER, MCC_S_NAME, MCC_COM_S1
+		FROM	 MF_COMM_CODE
+		WHERE CMN_DEL_STS = 'N'	 
+		AND MCC_L_CODE = '500' 
+		AND MCC_M_CODE = '502' 
+		AND MCC_S_CODE = #{mcc_s_code}
+	</select>
+
+	<insert id="insertBdItem" parameterType="hashmap">
+            INSERT INTO MF_COMM_CODE (
+               MCC_L_CODE, MCC_M_CODE, MCC_S_CODE,
+               MCC_SORT_ORDER, MCC_S_NAME, MCC_COM_S1,
+               CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID 
+            ) VALUES (
+               '500', '502', #{mcc_s_code}, 
+               #{mcc_sort_order}, #{mcc_s_name}, #{mcc_com_s1},
+               'N', SYSDATE,'createBdItem', #{ss_userid}
+            )
+	</insert>
+
+	<update id="updateBdItem" parameterType="hashmap">
+         UPDATE MF_COMM_CODE SET 
+             MCC_SORT_ORDER = #{mcc_sort_order},
+             MCC_S_NAME = #{mcc_s_name},
+             MCC_COM_S1 = #{mcc_com_s1},
+             CMN_UPD_PROG = 'createBdItem',
+             CMN_UPD_DATE = SYSDATE,
+             CMN_UPD_ID =  #{ss_userid}
+         WHERE MCC_L_CODE = '500' 
+         AND MCC_M_CODE = '502'
+         AND MCC_S_CODE = #{mcc_s_code}
+	</update>
+
+	<update id="deleteBdItem" parameterType="hashmap">
+         DELETE FROM MF_COMM_CODE CC
+         WHERE MCC_L_CODE = '500' 
+         AND MCC_M_CODE = '502'
+         AND MCC_S_CODE = #{mcc_s_code}
+         AND NOT EXISTS (
+            SELECT 1 FROM 
+            JN_JINRYO_DATE_KBL
+            WHERE CMN_DEL_STS = 'N'
+            AND JJDKBL_ITEM = CC.MCC_S_CODE
+         )
+	</update>
+
+</mapper>

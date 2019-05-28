@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Sta0610">
+
+	<sql id="AniDayList">
+		<![CDATA[
+		  SELECT   FN_GETANICLSNAME (MAI_ANICODE, '1') TXT_ANICODE_1,
+		           MDI_LINKNO,
+		           COUNT (DISTINCT DECODE (C.DAIO_IOTYPE, 1, MAI_ANICLSCODE)) CNT_CLS,
+		           SUM (DECODE (C.DAIO_IOTYPE, 1, 1, 0)) CNT_ANI,
+                   COUNT (
+                       DISTINCT (CASE
+                                     WHEN B.RENTEDATE >= B.SCH_DAY
+                                     THEN MAI_ANICLSCODE
+                                 END)
+                   ) CNT_BOYUK_CLS,
+                   SUM(CASE
+                           WHEN B.RENTEDATE >= B.SCH_DAY
+                           THEN 1
+                           ELSE 0
+                       END) CNT_BOYUK_ANI,
+                   COUNT (
+                       DISTINCT (CASE
+                                     WHEN B.RENTDATE >= B.SCH_DAY
+                                     THEN MAI_ANICLSCODE
+                                 END)
+                   ) CNT_RENT_CLS,
+                   SUM(CASE
+                           WHEN B.RENTDATE >= B.SCH_DAY
+                           THEN 1
+                           ELSE 0
+                       END) CNT_RENT_ANI
+			FROM   MF_ANI_INFO A,
+				   MF_ANI_CLS,
+				   MF_VVRM_INFO,
+				   MF_TEAM_INFO,
+				   MF_DPT_INFO,
+				   DT_ANI_IO C,
+                   (  SELECT   DAIO_ANICODE, T.SCH_DAY,
+                               MAX(CASE
+                                       WHEN DAIO_IOTYPE = '1' AND DAIO_BOYUKSTS = 'Y'
+                                            AND DAIO_IODATE <= SCH_DAY
+                                            AND DAIO_RENTEDATE >= DAIO_IODATE
+                                       THEN
+                                           DAIO_RENTEDATE
+                                   END)
+                                   AS RENTEDATE,
+                               MAX(CASE
+                                       WHEN DAIO_IOTYPE = '2' AND DAIO_RESN = '8'
+                                            AND DAIO_IODATE <= SCH_DAY
+                                            AND DAIO_RENTEDATE >= DAIO_IODATE
+                                       THEN
+                                           DAIO_RENTEDATE
+                                   END)
+                                   AS RENTDATE,
+                               MAX(CASE
+                                       WHEN NOT (DAIO_IOTYPE = '2' AND DAIO_RESN = '1')
+                                       THEN
+                                           DAIO_IODATE
+                                   END)
+                                   AS DATE1
+                        FROM   DT_ANI_IO
+                              ,(   SELECT DECODE(#{sch_type},'B',BASE_DAY,'D',PREV_DAY,'M',PREV_MONTH, 'Y',PREV_YEAR) SCH_DAY
+                                   FROM
+                                   (
+                                        SELECT TO_DATE ( #{cal_1}, 'YYYY-MM-DD') AS BASE_DAY
+                                              ,TO_DATE ( #{cal_1}, 'YYYY-MM-DD')- 1 AS PREV_DAY
+                                              ,ADD_MONTHS(#{cal_1},- 1) AS PREV_MONTH
+                                              ,ADD_MONTHS(#{cal_1},- 12) AS PREV_YEAR
+                                        FROM DUAL
+                                   ) 
+                               ) T
+                    GROUP BY   DAIO_ANICODE, T.SCH_DAY) B
+		   WHERE  MAI_ANICODE = B.DAIO_ANICODE
+			   AND MAI_ANICLSCODE = MAC_ANICLSCODE
+			   AND MAI_VVRMNO = MVI_VVRMNO
+			   AND A.CMN_DEL_STS = 'N'
+			   AND B.DAIO_ANICODE = C.DAIO_ANICODE
+			   AND B.DATE1 = C.DAIO_IODATE
+			   AND (MAI_DETHTYPE = '1' OR MAI_DETHTYPE = '2'
+                    AND NOT MAI_DETHDATE <= B.SCH_DAY)
+			   AND MVI_TEAMNO = MTI_TEAMNO
+			   AND MTI_DPTNO = MDI_LINKNO
+	           AND MDI_LINKNO IN ('6112588' --'동물기획과',
+	                               ,'6113719' --'동물복지1과',
+	                               ,'6113720' --'동물복지2과',
+	                               ,'6113721' --'종보전연구실'
+	                              )
+		   GROUP BY   FN_GETANICLSNAME (MAI_ANICODE, '1'), MDI_LINKNO
+		   ORDER BY   FN_GETANICLSNAME (MAI_ANICODE, '1'), MDI_LINKNO
+		]]>
+	</sql>
+	
+	<sql id="AniJnlList">
+		SELECT MDI_DPTNAME,
+		       MTI_TEAMNAME,
+		       FN_GETANICLSNAME (MAI_ANICODE, '1') TXT_ANICODE_1,
+		       MAC_NAME,
+		       MAI_ANICODE,
+		       DAIO_IOTYPE,
+		       FN_GETCOMCODE_CLS3NAME ('200', '202', MAI_SEX) TXT_MAI_SEX,
+		       DECODE (DAIO_IOTYPE,
+		               1, FN_GETCOMCODE_CLS3NAME ('200', '251', DAIO_RESN),
+		               FN_GETCOMCODE_CLS3NAME ('200', '252', DAIO_RESN)) TXT_DAIO_RESN
+		FROM   MF_ANI_INFO A,
+		       MF_ANI_CLS,
+		       DT_ANI_IO,
+		       MF_TEAM_INFO,
+		       MF_DPT_INFO,
+		       MF_VVRM_INFO
+		WHERE	   MAI_ANICLSCODE = MAC_ANICLSCODE
+				   AND MAI_ANICODE = DAIO_ANICODE
+				   AND A.CMN_DEL_STS = 'N'
+				   AND MAI_VVRMNO = MVI_VVRMNO
+				   AND MVI_TEAMNO = MTI_TEAMNO
+				   AND MTI_DPTNO = MDI_LINKNO
+				   AND TO_CHAR (DAIO_IODATE, 'YYYY-MM-DD') = #{cal_1}
+				   AND MDI_LINKNO IN
+							  ('6112588' --'동물기획과',
+							   ,'6113719' --'동물복지1과',
+							   ,'6113720' --'동물복지2과',
+							   ,'6113721' --'종보전연구실'
+		                      )
+		GROUP BY   MDI_DPTNAME,
+				   MTI_TEAMNAME,
+				   FN_GETANICLSNAME (MAI_ANICODE, '1'),
+				   MAC_NAME,
+				   MAI_ANICODE,
+		           DAIO_IOTYPE,
+		           MAI_SEX,
+				   DECODE (DAIO_IOTYPE,
+						   1, FN_GETCOMCODE_CLS3NAME ('200', '251', DAIO_RESN),
+						   FN_GETCOMCODE_CLS3NAME ('200', '252', DAIO_RESN))
+		ORDER BY   MDI_DPTNAME,
+				   MTI_TEAMNAME,
+				   FN_GETANICLSNAME (MAI_ANICODE, '1'),
+				   MAC_NAME,
+				   MAI_ANICODE
+	</sql>
+
+	<select id="selectAniJnlIList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH ANIJNL_LIST AS (
+			<include refid="AniJnlList" />
+		)
+		SELECT * FROM ANIJNL_LIST
+		WHERE DAIO_IOTYPE = '1'
+        ORDER BY   TXT_ANICODE_1,
+                   MTI_TEAMNAME,
+                   MAC_NAME
+	</select>
+
+	<select id="selectAniJnlOList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH ANIJNL_LIST AS (
+			<include refid="AniJnlList" />
+		)
+		SELECT * FROM ANIJNL_LIST
+		WHERE DAIO_IOTYPE = '2'
+        ORDER BY   TXT_ANICODE_1,
+                   MTI_TEAMNAME,
+                   MAC_NAME
+	</select>
+
+	<select id="selectAniDayTotList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH ANIDAY_LIST AS (
+			<include refid="AniDayList" />
+		) 
+		SELECT TXT_ANICODE_1
+			--  동물기획과
+		     , MAX(DECODE(MDI_LINKNO, 6112588, CNT_CLS)) CNT_1_CLS
+		     , MAX(DECODE(MDI_LINKNO, 6112588, CNT_ANI)) CNT_1_ANI
+		     , MAX(DECODE(MDI_LINKNO, 6112588, CNT_BOYUK_CLS)) CNT_1_BOYUK_CLS
+		     , MAX(DECODE(MDI_LINKNO, 6112588, CNT_BOYUK_ANI)) CNT_1_BOYUK_ANI
+		     , MAX(DECODE(MDI_LINKNO, 6112588, CNT_RENT_CLS)) CNT_1_RENT_CLS
+		     , MAX(DECODE(MDI_LINKNO, 6112588, CNT_RENT_ANI)) CNT_1_RENT_ANI
+			--  동물복지1과
+		     , MAX(DECODE(MDI_LINKNO, 6113719, CNT_CLS)) CNT_2_CLS
+		     , MAX(DECODE(MDI_LINKNO, 6113719, CNT_ANI)) CNT_2_ANI
+		     , MAX(DECODE(MDI_LINKNO, 6113719, CNT_BOYUK_CLS)) CNT_2_BOYUK_CLS
+		     , MAX(DECODE(MDI_LINKNO, 6113719, CNT_BOYUK_ANI)) CNT_2_BOYUK_ANI
+		     , MAX(DECODE(MDI_LINKNO, 6113719, CNT_RENT_CLS)) CNT_2_RENT_CLS
+		     , MAX(DECODE(MDI_LINKNO, 6113719, CNT_RENT_ANI)) CNT_2_RENT_ANI
+			--  동물복지2과
+		     , MAX(DECODE(MDI_LINKNO, 6113720, CNT_CLS)) CNT_3_CLS
+		     , MAX(DECODE(MDI_LINKNO, 6113720, CNT_ANI)) CNT_3_ANI
+		     , MAX(DECODE(MDI_LINKNO, 6113720, CNT_BOYUK_CLS)) CNT_3_BOYUK_CLS
+		     , MAX(DECODE(MDI_LINKNO, 6113720, CNT_BOYUK_ANI)) CNT_3_BOYUK_ANI
+		     , MAX(DECODE(MDI_LINKNO, 6113720, CNT_RENT_CLS)) CNT_3_RENT_CLS
+		     , MAX(DECODE(MDI_LINKNO, 6113720, CNT_RENT_ANI)) CNT_3_RENT_ANI
+			--  종보전연구실
+		     , MAX(DECODE(MDI_LINKNO, 6113721, CNT_CLS)) CNT_4_CLS
+		     , MAX(DECODE(MDI_LINKNO, 6113721, CNT_ANI)) CNT_4_ANI
+		     , MAX(DECODE(MDI_LINKNO, 6113721, CNT_BOYUK_CLS)) CNT_4_BOYUK_CLS
+		     , MAX(DECODE(MDI_LINKNO, 6113721, CNT_BOYUK_ANI)) CNT_4_BOYUK_ANI
+		     , MAX(DECODE(MDI_LINKNO, 6113721, CNT_RENT_CLS)) CNT_4_RENT_CLS
+		     , MAX(DECODE(MDI_LINKNO, 6113721, CNT_RENT_ANI)) CNT_4_RENT_ANI
+			--  합계
+		     , SUM(CNT_CLS) CNT_CLS
+		     , SUM(CNT_ANI) CNT_ANI
+		     , SUM(CNT_BOYUK_CLS) CNT_BOYUK_CLS
+		     , SUM(CNT_BOYUK_ANI) CNT_BOYUK_ANI
+		     , SUM(CNT_RENT_CLS) CNT_RENT_CLS
+		     , SUM(CNT_RENT_ANI) CNT_RENT_ANI
+		FROM ANIDAY_LIST
+		GROUP BY TXT_ANICODE_1     
+		ORDER BY TXT_ANICODE_1  
+	</select>
+
+	<select id="selectTotAniJnlInfo" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT 
+		    --  동물기획과
+		       SUM(CNT_1_CLS) CNT_1_CLS
+		      ,SUM(CNT_1_ANI) CNT_1_ANI
+		      ,SUM(CNT_1_BOYUK_CLS) CNT_1_BOYUK_CLS
+		      ,SUM(CNT_1_BOYUK_ANI) CNT_1_BOYUK_ANI
+		      ,SUM(CNT_1_RENT_CLS) CNT_1_RENT_CLS
+		      ,SUM(CNT_1_RENT_ANI) CNT_1_RENT_ANI
+		    --  동물기획과
+		      ,SUM(CNT_2_CLS) CNT_2_CLS
+		      ,SUM(CNT_2_ANI) CNT_2_ANI
+		      ,SUM(CNT_2_BOYUK_CLS) CNT_2_BOYUK_CLS
+		      ,SUM(CNT_2_BOYUK_ANI) CNT_2_BOYUK_ANI
+		      ,SUM(CNT_2_RENT_CLS) CNT_2_RENT_CLS
+		      ,SUM(CNT_2_RENT_ANI) CNT_2_RENT_ANI
+		    --  동물기획과
+		      ,SUM(CNT_3_CLS) CNT_3_CLS
+		      ,SUM(CNT_3_ANI) CNT_3_ANI
+		      ,SUM(CNT_3_BOYUK_CLS) CNT_3_BOYUK_CLS
+		      ,SUM(CNT_3_BOYUK_ANI) CNT_3_BOYUK_ANI
+		      ,SUM(CNT_3_RENT_CLS) CNT_3_RENT_CLS
+		      ,SUM(CNT_3_RENT_ANI) CNT_3_RENT_ANI
+		    --  동물기획과
+		      ,SUM(CNT_4_CLS) CNT_4_CLS
+		      ,SUM(CNT_4_ANI) CNT_4_ANI
+		      ,SUM(CNT_4_BOYUK_CLS) CNT_4_BOYUK_CLS
+		      ,SUM(CNT_4_BOYUK_ANI) CNT_4_BOYUK_ANI
+		      ,SUM(CNT_4_RENT_CLS) CNT_4_RENT_CLS
+		      ,SUM(CNT_4_RENT_ANI) CNT_4_RENT_ANI
+		    --  동물기획과
+		      ,SUM(CNT_CLS) CNT_CLS
+		      ,SUM(CNT_ANI) CNT_ANI
+		      ,SUM(CNT_BOYUK_CLS) CNT_BOYUK_CLS
+		      ,SUM(CNT_BOYUK_ANI) CNT_BOYUK_ANI
+		      ,SUM(CNT_RENT_CLS) CNT_RENT_CLS
+		      ,SUM(CNT_RENT_ANI) CNT_RENT_ANI
+		FROM 
+		(
+				WITH ANIDAY_LIST AS (
+					<include refid="AniDayList" />
+				) 
+				SELECT TXT_ANICODE_1
+					--  동물기획과
+				     , MAX(DECODE(MDI_LINKNO, 6112588, CNT_CLS)) CNT_1_CLS
+				     , MAX(DECODE(MDI_LINKNO, 6112588, CNT_ANI)) CNT_1_ANI
+				     , MAX(DECODE(MDI_LINKNO, 6112588, CNT_BOYUK_CLS)) CNT_1_BOYUK_CLS
+				     , MAX(DECODE(MDI_LINKNO, 6112588, CNT_BOYUK_ANI)) CNT_1_BOYUK_ANI
+				     , MAX(DECODE(MDI_LINKNO, 6112588, CNT_RENT_CLS)) CNT_1_RENT_CLS
+				     , MAX(DECODE(MDI_LINKNO, 6112588, CNT_RENT_ANI)) CNT_1_RENT_ANI
+					--  동물복지1과
+				     , MAX(DECODE(MDI_LINKNO, 6113719, CNT_CLS)) CNT_2_CLS
+				     , MAX(DECODE(MDI_LINKNO, 6113719, CNT_ANI)) CNT_2_ANI
+				     , MAX(DECODE(MDI_LINKNO, 6113719, CNT_BOYUK_CLS)) CNT_2_BOYUK_CLS
+				     , MAX(DECODE(MDI_LINKNO, 6113719, CNT_BOYUK_ANI)) CNT_2_BOYUK_ANI
+				     , MAX(DECODE(MDI_LINKNO, 6113719, CNT_RENT_CLS)) CNT_2_RENT_CLS
+				     , MAX(DECODE(MDI_LINKNO, 6113719, CNT_RENT_ANI)) CNT_2_RENT_ANI
+					--  동물복지2과
+				     , MAX(DECODE(MDI_LINKNO, 6113720, CNT_CLS)) CNT_3_CLS
+				     , MAX(DECODE(MDI_LINKNO, 6113720, CNT_ANI)) CNT_3_ANI
+				     , MAX(DECODE(MDI_LINKNO, 6113720, CNT_BOYUK_CLS)) CNT_3_BOYUK_CLS
+				     , MAX(DECODE(MDI_LINKNO, 6113720, CNT_BOYUK_ANI)) CNT_3_BOYUK_ANI
+				     , MAX(DECODE(MDI_LINKNO, 6113720, CNT_RENT_CLS)) CNT_3_RENT_CLS
+				     , MAX(DECODE(MDI_LINKNO, 6113720, CNT_RENT_ANI)) CNT_3_RENT_ANI
+					--  종보전연구실
+				     , MAX(DECODE(MDI_LINKNO, 6113721, CNT_CLS)) CNT_4_CLS
+				     , MAX(DECODE(MDI_LINKNO, 6113721, CNT_ANI)) CNT_4_ANI
+				     , MAX(DECODE(MDI_LINKNO, 6113721, CNT_BOYUK_CLS)) CNT_4_BOYUK_CLS
+				     , MAX(DECODE(MDI_LINKNO, 6113721, CNT_BOYUK_ANI)) CNT_4_BOYUK_ANI
+				     , MAX(DECODE(MDI_LINKNO, 6113721, CNT_RENT_CLS)) CNT_4_RENT_CLS
+				     , MAX(DECODE(MDI_LINKNO, 6113721, CNT_RENT_ANI)) CNT_4_RENT_ANI
+					--  합계
+				     , SUM(CNT_CLS) CNT_CLS
+				     , SUM(CNT_ANI) CNT_ANI
+				     , SUM(CNT_BOYUK_CLS) CNT_BOYUK_CLS
+				     , SUM(CNT_BOYUK_ANI) CNT_BOYUK_ANI
+				     , SUM(CNT_RENT_CLS) CNT_RENT_CLS
+				     , SUM(CNT_RENT_ANI) CNT_RENT_ANI
+				FROM ANIDAY_LIST
+				GROUP BY TXT_ANICODE_1     
+				ORDER BY TXT_ANICODE_1  
+		)
+	</select>
+	
+	<select id="selectAniClsKnjpInfo" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		<![CDATA[
+		 SELECT	 COUNT (DISTINCT MAI_ANICLSCODE) CNT_ANICLS_KNJP, TO_CHAR(TO_DATE(#{cal_1}), 'YYYY"년 "MM"월 "DD"일"' ) TXT_SCH_DATE
+		 FROM	 MF_ANI_INFO A,
+				 MF_ANI_CLS,
+				 (	SELECT	 DAIO_ANICODE,
+							 MAX(CASE
+									 WHEN NOT (DAIO_IOTYPE = '2' AND DAIO_RESN = '1')
+									 THEN
+										 DAIO_IODATE
+								 END) AS DATE1
+					 FROM	 DT_ANI_IO
+					 WHERE	 DAIO_IODATE <= TO_DATE (#{cal_1}, 'YYYY-MM-DD')
+				     GROUP BY	 DAIO_ANICODE ) B,
+				 DT_ANI_IO C
+		 WHERE	MAI_ANICLSCODE = MAC_ANICLSCODE
+		 AND MAI_ANICODE = B.DAIO_ANICODE
+		 AND A.CMN_DEL_STS = 'N'
+		 AND (MAI_DETHTYPE = '1' OR MAI_DETHTYPE = '2'
+		 AND NOT MAI_DETHDATE <= TO_DATE (#{cal_1}, 'YYYY-MM-DD'))
+		 AND B.DAIO_ANICODE = C.DAIO_ANICODE
+		 AND B.DATE1 = C.DAIO_IODATE
+		 AND C.DAIO_IOTYPE = '1'
+		 AND MAI_KNJPTYPE = '2'   
+		]]>
+	</select>
+	
+</mapper>

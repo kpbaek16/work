@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CmStatMapper">
+
+	<sql id="AniList">
+        SELECT MAX(DECODE(MAC_ANICODE1, 'I', MAC_ANICODE1)) MAC_1
+            , MAX(DECODE(MAC_ANICODE1, 'A', MAC_ANICODE1)) MAC_2
+            , MAX(DECODE(MAC_ANICODE1, 'B', MAC_ANICODE1)) MAC_3
+            , MAX(DECODE(MAC_ANICODE1, 'R', MAC_ANICODE1)) MAC_4
+            , MAX(DECODE(MAC_ANICODE1, 'M', MAC_ANICODE1)) MAC_5
+        FROM
+        (
+            SELECT MAC_ANICODE1, MAC_NAME, MAC_ANICLSCODE
+            FROM  MF_ANI_CLS
+            WHERE MAC_ANICLSCODE = CONCAT (MAC_ANICODE1, '0-0-0')
+            AND MAC_ANICODE1 IN ('I','A','B','R','M')
+        )   
+	</sql>
+
+	<select id="selectTotAniList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		<![CDATA[
+			SELECT CNT_1, CNT_2, CNT_3, CNT_4, CNT_5
+			FROM
+			(
+			    WITH TEMP_TABLE AS (
+			        SELECT TO_CHAR(SYSDATE,'YYYY') THIS_YEAR, LEVEL MON
+			        FROM DUAL
+			        CONNECT BY LEVEL <= 12
+			    )
+			    SELECT T.*, A.*
+			        ,(SELECT COUNT(*) FROM MF_ANI_INFO AI
+			          WHERE TO_CHAR(MAI_OSREGDATE,'YYYYMM') <= T.THIS_YEAR || LPAD(T.MON,2,0)
+			          AND SUBSTR(MAI_ANICLSCODE, 1, 1) = A.MAC_1
+			          AND MAI_CURSTS NOT IN ('6', '7') -- 반출(6), 폐사(7)
+			        ) CNT_1
+			        ,(SELECT COUNT(*) FROM MF_ANI_INFO AI
+			          WHERE TO_CHAR(MAI_OSREGDATE,'YYYYMM') <= T.THIS_YEAR || LPAD(T.MON,2,0)
+			          AND SUBSTR(MAI_ANICLSCODE, 1, 1) = A.MAC_2
+			          AND MAI_CURSTS NOT IN ('6', '7') -- 반출(6), 폐사(7)
+			        ) CNT_2
+			        ,(SELECT COUNT(*) FROM MF_ANI_INFO AI
+			          WHERE TO_CHAR(MAI_OSREGDATE,'YYYYMM') <= T.THIS_YEAR || LPAD(T.MON,2,0)
+			          AND SUBSTR(MAI_ANICLSCODE, 1, 1) = A.MAC_3
+			          AND MAI_CURSTS NOT IN ('6', '7') -- 반출(6), 폐사(7)
+			        ) CNT_3
+			        ,(SELECT COUNT(*) FROM MF_ANI_INFO AI
+			          WHERE TO_CHAR(MAI_OSREGDATE,'YYYYMM') <= T.THIS_YEAR || LPAD(T.MON,2,0)
+			          AND SUBSTR(MAI_ANICLSCODE, 1, 1) = A.MAC_4
+			          AND MAI_CURSTS NOT IN ('6', '7') -- 반출(6), 폐사(7)
+			        ) CNT_4
+			        ,(SELECT COUNT(*) FROM MF_ANI_INFO AI
+			          WHERE TO_CHAR(MAI_OSREGDATE,'YYYYMM') <= T.THIS_YEAR || LPAD(T.MON,2,0)
+			          AND SUBSTR(MAI_ANICLSCODE, 1, 1) = A.MAC_5
+			          AND MAI_CURSTS NOT IN ('6', '7') -- 반출(6), 폐사(7)
+			        ) CNT_5
+			    FROM TEMP_TABLE T,
+			    (
+		]]>
+					<include refid="AniList" />
+			    ) A    
+			)   
+	</select>
+
+	<select id="selectBsAniList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		<![CDATA[
+			SELECT CNT_1, CNT_2, CNT_3, CNT_4, CNT_5
+			FROM
+			(
+			    WITH TEMP_TABLE AS (
+			        SELECT TO_CHAR(SYSDATE,'YYYY') THIS_YEAR, LEVEL MON
+			        FROM DUAL
+			        CONNECT BY LEVEL <= 12
+			    )
+			    SELECT T.*, A.*
+			        ,(SELECT COUNT(*) FROM MF_ANI_INFO AI
+			          WHERE TO_CHAR(MAI_BIRTHDAY,'YYYYMM') = T.THIS_YEAR || LPAD(T.MON,2,0)
+			          AND SUBSTR(MAI_ANICLSCODE, 1, 1) = A.MAC_1
+			          AND MAI_REGTYPE = '1'  -- 번식(1)
+			        ) CNT_1
+			        ,(SELECT COUNT(*) FROM MF_ANI_INFO AI
+			          WHERE TO_CHAR(MAI_BIRTHDAY,'YYYYMM') = T.THIS_YEAR || LPAD(T.MON,2,0)
+			          AND SUBSTR(MAI_ANICLSCODE, 1, 1) = A.MAC_2
+			          AND MAI_REGTYPE = '1'
+			        ) CNT_2
+			        ,(SELECT COUNT(*) FROM MF_ANI_INFO AI
+			          WHERE TO_CHAR(MAI_BIRTHDAY,'YYYYMM') = T.THIS_YEAR || LPAD(T.MON,2,0)
+			          AND SUBSTR(MAI_ANICLSCODE, 1, 1) = A.MAC_3
+			          AND MAI_REGTYPE = '1'
+			        ) CNT_3
+			        ,(SELECT COUNT(*) FROM MF_ANI_INFO AI
+			          WHERE TO_CHAR(MAI_BIRTHDAY,'YYYYMM') = T.THIS_YEAR || LPAD(T.MON,2,0)
+			          AND SUBSTR(MAI_ANICLSCODE, 1, 1) = A.MAC_4
+			          AND MAI_REGTYPE = '1'
+			        ) CNT_4
+			        ,(SELECT COUNT(*) FROM MF_ANI_INFO AI
+			          WHERE TO_CHAR(MAI_BIRTHDAY,'YYYYMM') = T.THIS_YEAR || LPAD(T.MON,2,0)
+			          AND SUBSTR(MAI_ANICLSCODE, 1, 1) = A.MAC_5
+			          AND MAI_REGTYPE = '1'
+			        ) CNT_5
+			    FROM TEMP_TABLE T,
+			    (
+		]]>
+					<include refid="AniList" />
+			    ) A    
+			)   
+	</select>
+    	
+</mapper>

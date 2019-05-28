@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Sta0611">
+
+	<sql id="AniClsList">
+	    SELECT MAI_ANICODE, MAI_INSIKNO,
+	    	   MAI_ANICLSCODE,
+               DENSE_RANK() OVER (
+				<choose>
+				<when test='schOrder == "MAC_NAME"'>
+					   		ORDER BY  MAC_NAME 
+				</when>
+				<otherwise>
+		              		ORDER BY MAI_ANICLSCODE 
+				</otherwise>
+				</choose>
+               ) ANI_ROW,
+               ROW_NUMBER() OVER (PARTITION BY MAI_ANICLSCODE ORDER BY MAI_ANICODE ) ANILIST_ROW,
+	           MAC_NAME,
+	           MAI_BNAME,
+	           MAC_ENAME,
+	           MAI_SEX,
+	           FN_GETCOMCODE_CLS3NAME ('200', '202', MAI_SEX) AS TXT_MAI_SEX,
+	           FN_GETDPTNAME (MAI_TEAMNO) TXT_MAI_TEAMNO,
+	           MAI_VVRMNO,
+	           FN_GETVVRMNAME (MAI_VVRMNO) TXT_MAI_VVRMNO,
+	           TO_CHAR (MAI_BIRTHDAY, 'yyyy-mm-dd') TXT_MAI_BIRTHDAY,
+	           TO_CHAR (DATE1, 'YYYY-MM-DD') TXT_DATE1,
+	           TO_CHAR (DATE2, 'YYYY-MM-DD') TXT_DATE2,
+	           FN_GETCOMCODE_CLS3NAME ('200', '252', TYPE2) TXT_TYPE2,
+	           MAI_DETHTYPE,
+	           FN_GETCOMCODE_CLS3NAME ('200', '208', MAI_DETHTYPE) AS TXT_MAI_DETHTYPE,
+	           TO_CHAR (MAI_DETHDATE, 'yyyy-mm-dd') TXT_MAI_DETHDATE,
+	           FN_GETCOMCODE_CLS3NAME ('200', '200', MAI_REGTYPE) AS MAI_REGTYPE,
+		<![CDATA[
+	           CASE
+	               WHEN TO_CHAR(D.RENTEDATE, 'YYYY-MM-DD') >= #{cal_1} THEN 1
+	               ELSE 0
+	           END
+	               AS BOYUK
+	    FROM   MF_ANI_CLS A, MF_ANI_INFO B 
+	           LEFT OUTER JOIN
+	               (  SELECT   DAIO_ANICODE,
+	                           MAX (DAIO_IODATE) AS DATE2,
+	                           MAX (DAIO_RESN)
+	                               KEEP (DENSE_RANK LAST ORDER BY DAIO_IODATE)
+	                               TYPE2
+	                    FROM   DT_ANI_IO
+	                   WHERE   DAIO_IOTYPE = '2'
+	                           AND TO_CHAR(DAIO_IODATE, 'YYYY-MM-DD') <= #{cal_2}
+	                GROUP BY   DAIO_ANICODE) C
+	           ON (B.MAI_ANICODE = C.DAIO_ANICODE),
+	           (  SELECT   DAIO_ANICODE,
+	                       MAX (DAIO_IODATE) AS DATE1,
+	                       MAX (DECODE (DAIO_BOYUKSTS, 'Y', DAIO_RENTEDATE))
+	                           AS RENTEDATE
+	                FROM   DT_ANI_IO
+	               WHERE   DAIO_IOTYPE = '1'
+	                       AND TO_CHAR(DAIO_IODATE, 'YYYY-MM-DD') <= #{cal_2}
+	               GROUP BY DAIO_ANICODE ) D
+		]]>
+	    WHERE MAI_ANICLSCODE = MAC_ANICLSCODE
+	    AND D.DAIO_ANICODE = MAI_ANICODE
+	    AND ( (DATE2 IS NOT NULL AND DATE1 > DATE2) OR (DATE2 IS NULL) )
+	    AND B.CMN_DEL_STS = 'N'
+		<if test="schVvrm != '' and schVvrm != null">
+	    AND MAI_VVRMNO = #{schVvrm}
+		</if>
+		<if test="schDethType != '' and schDethType != null">
+	    AND MAI_DETHTYPE = #{schDethType}
+		</if>
+	    AND B.CMN_DEL_STS = 'N'
+		<if test="schClsCode != '' and schClsCode != null">
+	    AND MAI_ANICODE LIKE '%' || #{schClsCode} || '%'
+		</if>
+		<if test="schMacName != '' and schMacName != null">
+	    AND MAC_NAME LIKE '%' || #{schMacName} || '%'
+		</if>
+		AND TO_CHAR(DATE1, 'YYYY-MM-DD') BETWEEN #{cal_1} AND #{cal_2}
+		<choose>
+		<when test='schOrder == "MAC_NAME"'>
+		ORDER BY  MAC_NAME 
+		</when>
+		<otherwise>
+        ORDER BY MAI_ANICLSCODE 
+		</otherwise>
+		</choose>
+	</sql>
+
+	<select id="selectAniClsList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	<include refid="AniClsList" />
+	</select>
+
+	<select id="selectAniClsTotList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH ANICLS_LIST AS (
+			<include refid="AniClsList" />
+		) 
+        SELECT MAI_ANICLSCODE,
+               (SELECT MAC_NAME FROM MF_ANI_CLS WHERE MAC_ANICLSCODE = A.MAI_ANICLSCODE) MAC_NAME,
+               (SELECT MAC_ENAME FROM MF_ANI_CLS WHERE MAC_ANICLSCODE = A.MAI_ANICLSCODE) MAC_ENAME,
+               DECODE(MAI_DETHTYPE,'1', SUM (CASE WHEN (MAI_SEX IN ('1', '3')) THEN 1 ELSE 0 END),0) CNT_1_MAI_SEX_M,
+               DECODE(MAI_DETHTYPE,'1', SUM (CASE WHEN (MAI_SEX IN ('2', '4')) THEN 1 ELSE 0 END),0) CNT_1_MAI_SEX_F,
+               DECODE(MAI_DETHTYPE,'1', SUM (CASE WHEN (MAI_SEX IN ('5', '6')) THEN 1 ELSE 0 END),0) CNT_1_MAI_SEX_A,
+               DECODE(MAI_DETHTYPE,'1', COUNT (MAI_SEX),0) CNT_1_MAI_SEX,
+               DECODE(MAI_DETHTYPE,'2', SUM (CASE WHEN (MAI_SEX IN ('1', '3')) THEN 1 ELSE 0 END),0) CNT_2_MAI_SEX_M,
+               DECODE(MAI_DETHTYPE,'2', SUM (CASE WHEN (MAI_SEX IN ('2', '4')) THEN 1 ELSE 0 END),0) CNT_2_MAI_SEX_F,
+               DECODE(MAI_DETHTYPE,'2', SUM (CASE WHEN (MAI_SEX IN ('5', '6')) THEN 1 ELSE 0 END),0) CNT_2_MAI_SEX_A,
+               DECODE(MAI_DETHTYPE,'2', COUNT (MAI_SEX),0) CNT_2_MAI_SEX
+        FROM ANICLS_LIST A
+        GROUP BY MAI_ANICLSCODE, MAI_DETHTYPE
+		<choose>
+		<when test='schOrder == "MAC_NAME"'>
+		ORDER BY  MAC_NAME 
+		</when>
+		<otherwise>
+        ORDER BY MAI_ANICLSCODE 
+		</otherwise>
+		</choose>
+	</select>
+	
+</mapper>

@@ -1,0 +1,32 @@
+@charset "utf-8";
+
+/* CSS Document */
+html,body{width:100%; height:100%;}
+body{background:#f5f5f5;}
+
+
+/* index UI layout*/
+#index_wrap{position:relative; width:100%; background:url('../images/index_bg.gif') no-repeat; background-size:cover;  }
+#index_header_wrap{position:relative; z-index:1; width:1200px; height:150px;margin:0 auto;}
+#index_header{position:relative; width:1200px; height:150px; margin:0 auto;}
+#index_visual{position:relative; width:1200px; height:730px; margin:0 auto;}
+#index_footer{position:relative; width:100%; height:100px;margin:0 auto;}
+#footer{position:relative; width:1200px; height:100px; margin:0 auto; }
+
+/* index_header */
+#logo_index{position:absolute;width:307px; height:150px; margin-top:50px;}
+#login_box{position:relative; width:350px; height:65px; left:850px; top:66px;}
+#login{width:240px; height:65px; float:left; margin-right:10px;}
+#login li{ margin-bottom:5px;}
+#login input[type="text"], #login input[type="password"]{font:normal 13px/26px "돋움","굴림"; color: #404040; border:solid 1px #5acab1; height: 26px; width: 240px; text-indent:4px;}
+#login input::-moz-placeholder{font:normal 12px/26px "돋움","굴림"; color: #aaa;letter-spacing:1px;}
+#login_box button{width:100px; height:65px; line-height:75px; text-align:center; background:#da5a1e; border:none;}
+
+/* index_visual*/
+#visual_wrap{width:873px; height:641px; background:url('../images/index_imgbg.png') no-repeat; margin:0 auto;}
+#visual{width:720px; height:510px; margin-top:55px;}
+#visual img{border-radius:40px; margin-top:80px; margin-left:84px;}
+
+/* footer_copyright */
+.footer_logo{float:left; width:180px; text-align:center; padding-top:10px;}
+.footer_copyright{width:600px; font:normal 12px "돋움","굴림"; color: #fff; margin-left:600px; padding-top:34px;}

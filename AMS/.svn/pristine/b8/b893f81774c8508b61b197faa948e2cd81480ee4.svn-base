@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Jour0304">
+
+	<select id="selectDethReptList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT B.PBR_DOCNO, P.PDR_DOCNO, TO_CHAR(P.PDR_PSDATE,'YYYY-MM-DD AM HH:MI') as PDR_PSDATE, B.PBR_ReqDocNo , P.PDR_AniCode, C.MAC_NAME,
+		fn_getDptName(I.MAI_TeamNo) as DptName , MVI_VVRMNAME , fn_getComCode_Cls3Name(200, 202, I.MAI_Sex) as MAI_GENDER, MAI_BNAME,
+		(SELECT
+		DECODE(BDC_PROCSTS,'X','결재대기','P','결재진행','E','결재완료')
+		FROM BZ_DOC_COMM
+		GROUP BY BDC_DOCNO, BDC_DOCTYPE, BDC_KJNO, BDC_PROCSTS
+		HAVING BDC_DOCNO
+		= P.PDR_DOCNO
+		AND BDC_KJNO = MAX(BDC_KJNO)
+		AND BDC_DOCTYPE != '4')
+		PROCSTS
+		FROM
+		RV_BIZ_INFO R,
+		MF_ANI_CLS C,
+		MF_ANI_INFO I,
+		MF_VVRM_INFO V,
+		PS_DETH_REPT P
+		LEFT JOIN PS_BUKM_REPT B on P.PDR_DOCNO = B.PBR_REQDOCNO
+		WHERE
+		I.MAI_AniClsCode = C.MAC_AniClsCode
+		AND I.MAI_AniCode = P.PDR_AniCode	
+		AND R.RBI_ReqDocNo = P.PDR_DocNo
+		AND V.MVI_VVRMNO = MAI_VVRMNO
+		AND R.RBI_BizDtlType = 'YY02_02'
+		AND
+		P.CMN_DEL_STS = 'N'
+
+		<if test="cal_1 != ''">
+	<![CDATA[
+	    AND TO_CHAR(PDR_PSDATE,'YYYY-MM-DD') >= #{cal_1}
+	]]>
+		</if>
+
+		<if test="cal_2 != ''">
+	<![CDATA[
+	  	AND TO_CHAR(PDR_PSDATE,'YYYY-MM-DD') <= #{cal_2}
+	]]>
+		</if>
+		
+		<if test="selbox != ''">
+		AND MVI_VVRMNO = #{selbox}
+		</if>
+		
+		<if test="schAname != ''">
+		AND MAC_NAME LIKE '%' || #{schAname} || '%'
+		</if>
+		
+		ORDER BY P.PDR_PSDATE ASC
+	</select>
+
+	<select id="search_pop_code" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT MAI_AniCode, MAI_AniClsCode, MAC_Name, MAI_BName, MAC_SName,MVI_VVRMNAME,
+		fn_getComCode_Cls3Name('200','202',MAI_Sex) as MAI_GENDER,
+		to_char(MAI_BIRTHDAY,'YYYY-MM-DD') as MAI_BIRTHDAY, MAC_EName,
+		MAC_SName, fn_getComCode_Cls3Name('200','208',MAI_DethType) as MAI_DethType
+		FROM MF_ANI_CLS, MF_ANI_INFO, MF_VVRM_INFO
+		WHERE MAI_AniClsCode = MAC_AniClsCode
+		AND MF_ANI_INFO.CMN_DEL_STS='N'
+		AND MVI_VVRMNO = MAI_VVRMNO
+		<choose>
+			<when test="pyeType == 'All'">
+				AND MAI_DethType != '0'
+			</when>
+
+			<when test="pyeType == 'Alive'">
+				AND MAI_DethType = '1'
+			</when>
+
+			<when test="pyeType == 'Death'">
+				AND MAI_DethType = '2'
+			</when>
+		</choose>
+		
+		<if test="selbox == '1'.toString()">
+      	<!-- 박제실 -->
+      	AND MVI_VVRMNAME = '박제실'
+      	</if>
+      	
+      	<if test="selbox == '2'.toString()">
+      	<!-- 사료실 -->
+     	AND MVI_VVRMNAME = ='사료실'
+      	</if>
+      	
+      	<if test="selbox == '3'.toString()">
+      	<!-- 곤충관 -->
+      	AND MVI_VVRMNAME = ='곤충관'
+      	</if>
+      	
+      	<if test="selbox == '4'.toString()">
+      	<!-- 동물교실 -->
+      	AND MVI_VVRMNAME = '동물교실'
+      	</if>
+      	
+      	<if test="selbox == '5'.toString()">
+      	<!-- 나비온실 -->
+      	AND MVI_VVRMNAME = '나비온실'
+      	</if>
+      	
+      	<if test="selbox == '6'.toString()">
+      	<!-- 돌고래쇼장 -->
+      	AND MVI_VVRMNAME = '돌고래쇼장'
+      	</if>
+      	
+      	<if test="selbox == '7'.toString()">
+      	<!-- 해양관 -->
+      	AND MVI_VVRMNAME = '해양관'
+      	</if>
+      	
+      	<if test="selbox == '8'.toString()">
+      	<!-- 홍학사 -->
+      	AND MVI_VVRMNAME = '홍학사'
+      	</if>
+      	
+      	<if test="selbox == '9'.toString()">
+      	<!-- 동물한마당 -->
+      	AND MVI_VVRMNAME = '동물한마당'
+      	</if>
+      	
+      	<if test="selbox == '10'.toString()">
+      	<!-- 꼬마동물사 -->
+      	AND MVI_VVRMNAME = '꼬마동물사'
+      	</if>
+      	
+      	<if test="selbox == '11'.toString()">
+      	<!-- 동물농장 -->
+      	AND MVI_VVRMNAME = '동물농장'
+      	</if>
+      	
+      	<if test="selbox == '12'.toString()">
+      	<!-- 열대조류관 -->
+      	AND MVI_VVRMNAME = '열대조류관'
+      	</if>
+      	
+      	<if test="selbox == '13'.toString()">
+      	<!-- 큰물새장 -->
+      	AND MVI_VVRMNAME = '큰물새장'
+      	</if>
+      	
+      	<if test="selbox == '14'.toString()">
+      	<!-- 황새마을 -->
+      	AND MVI_VVRMNAME = '황새마을'
+      	</if>
+      	
+      	<if test="selbox == '15'.toString()">
+      	<!-- 맹금사 -->
+      	AND MVI_VVRMNAME = '맹금사'
+      	</if>
+      	
+      	<if test="selbox == '17'.toString()">
+      	<!-- 공작마을 -->
+      	AND MVI_VVRMNAME = '공작마을'
+      	</if>
+      	
+      	<if test="selbox == '18'.toString()">
+      	<!-- 사슴사 -->
+      	AND MVI_VVRMNAME = '사슴사'
+      	</if>
+      	
+      	<if test="selbox == '19'.toString()">
+      	<!-- 제1AF관 -->
+      	AND MVI_VVRMNAME = '제1AF관'
+      	</if>
+      	
+      	<if test="selbox == '20'.toString()">
+      	<!-- 제2AF관 -->
+      	AND MVI_VVRMNAME = '제2AF관'
+      	</if>
+      	
+      	<if test="selbox == '25'.toString()">
+      	<!-- 제3AF관  -->
+      	AND MVI_VVRMNAME = '제3AF관'
+      	</if>
+      	
+      	<if test="selbox == '21'.toString()">
+      	<!-- 유인원관 -->
+      	AND MVI_VVRMNAME = '유인원관'
+      	</if>
+      	
+      	<if test="selbox == '22'.toString()">
+      	<!-- 호주관  -->
+      	AND MVI_VVRMNAME = '호주관'
+      	</if>
+      	
+      	<if test="selbox == '23'.toString()">
+      	<!-- 야행관 -->
+      	AND MVI_VVRMNAME = '야행관'
+      	</if>
+      	
+      	<if test="selbox == '24'.toString()">
+      	<!-- 대동물관 -->
+      	AND MVI_VVRMNAME = '대동물관'
+      	</if>
+      	
+      	<if test="selbox == '26'.toString()">
+      	<!-- 동양관 -->
+      	AND MVI_VVRMNAME = '동양관'
+      	</if>
+      	
+      	<if test="selbox == '27'.toString()">
+      	<!-- 낙타사 -->
+      	AND MVI_VVRMNAME = '낙타사'
+      	</if>
+      	
+      	<if test="selbox == '28'.toString()">
+      	<!-- 여우사 -->
+      	AND MVI_VVRMNAME = '여우사'
+      	</if>
+      	
+      	<if test="selbox == '29'.toString()">
+      	<!-- 맹수사 -->
+      	AND MVI_VVRMNAME = '맹수사'
+      	</if>
+      	
+      	<if test="selbox == '30'.toString()">
+      	<!-- 우리숲우리동물관 -->
+      	AND MVI_VVRMNAME = '우리숲우리동물관'
+      	</if>
+      	
+      	<if test="selbox == '31'.toString()">
+      	<!-- 곰사 -->
+      	AND MVI_VVRMNAME = '곰사'
+      	</if>
+      	
+      	<if test="selbox == '32'.toString()">
+      	<!-- 남미관 -->
+      	AND MVI_VVRMNAME = '남미관'
+      	</if>
+      	
+      	<if test="selbox == '33'.toString()">
+      	<!-- 종보전교육관 -->
+      	AND MVI_VVRMNAME = '종보전교육관'
+      	</if>
+      	
+      	<if test="selbox == '37'.toString()">
+      	<!-- 들소사 -->
+      	AND MVI_VVRMNAME = '들소사'
+      	</if>
+      	
+      	<if test="selbox == '38'.toString()">
+      	<!-- 번식장 -->
+      	AND MVI_VVRMNAME = '번식장'
+      	</if>
+      	
+      	<if test="selbox == '39'.toString()">
+      	<!-- 동물병원 -->
+      	AND MVI_VVRMNAME = '동물병원'
+      	</if>
+      	
+      	<if test="selbox == '41'.toString()">
+      	<!-- 가금사 -->
+      	AND MVI_VVRMNAME = '가금사'
+      	</if>
+
+		<if test="codeSearch != ''">
+			AND MAI_AniCode like '%' || #{codeSearch} || '%'
+		</if>
+		<if test="schKeyword != ''">
+			AND MAC_Name like '%' || #{schKeyword} || '%'
+		</if>
+	</select>
+
+	<select id="getAnimalInfo" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT MAI_ANICODE, MAC_ANICLSCODE, MAC_NAME, MAC_ENAME,
+		MAC_SNAME, MVI_VVRMNAME,fn_getComCode_Cls3Name(200, 202, MAI_Sex) as MAI_GENDER,
+		FLOOR(MONTHS_BETWEEN(SYSDATE,TO_CHAR(MAI_Birthday,'YYYY-MM-DD'))/12) AS AGE,
+		FLOOR(MONTHS_BETWEEN( SYSDATE,
+		TO_CHAR(MAI_Birthday,'YYYY-MM-DD'))) - FLOOR(MONTHS_BETWEEN(SYSDATE,
+		TO_CHAR(MAI_Birthday,'YYYY-MM-DD')) / 12 ) * 12 as AGE2,
+		FN_GETCOMCODE_ClS3NAME('200','206',MAC_CITES) AS MAC_CITES,
+		FN_GETCOMCODE_ClS3NAME('200','205',MAC_CITES) AS MAC_RANK, MAC_NATMON
+		FROM MF_ANI_INFO, MF_ANI_CLS, MF_VVRM_INFO
+		WHERE MAI_ANICLSCODE = MAC_ANICLSCODE
+		AND MVI_VVRMNO = MAI_VVRMNO
+		AND MAI_ANICODE = #{MAI_ANICODE}
+		AND MF_ANI_INFO.CMN_DEL_STS='N'
+	</select>
+
+	<insert id="insPsWrite" parameterType="hashmap">
+		INSERT INTO
+		PS_DETH_REPT(PDR_DocNo, PDR_PSDate, PDR_UserID, PDR_AniCode,
+		PDR_DethProc, PDR_Cmnt, PDR_WaySch,PDR_BukmReq
+		,PDR_RsltDocNo,CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID,
+		CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID)
+		VALUES('PS20170612-00001',
+		#{PDR_PSDate}, #{ss_id}, #{PDR_AniCode}, #{PDR_DethProc},
+		#{PDR_Cmnt},#{PDR_WaySch} ,#{PDR_BukmReq},'BU20130829-00001' ,'N',
+		SYSDATE, 'save_PSData', #{CMN_MAK_ID}, SYSDATE, 'save_PSData',
+		#{CMN_UPD_ID})
+	</insert>
+
+	<insert id="insBDCWrite" parameterType="hashmap">
+		insert into BZ_DOC_COMM ( BDC_DocNo, BDC_DocType, BDC_KJNo, BDC_DOCCmnt,
+		BDC_ProcSts, BDC_RsltSts, CMN_DEL_STS, CMN_MAK_DATE,
+		CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID )
+		values ('PS20170607-00002', '1', 1, '폐사보고서', 'X', ' ' , 'N', SYSTIMESTAMP,
+		'mak_docCommInfo', 'F714a4ee36ec6',
+		SYSTIMESTAMP, 'mak_docCommInfo', 'F714a4ee36ec6')
+	</insert>
+
+
+</mapper>

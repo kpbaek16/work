@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Sta0602">
+
+	<sql id="AniVvrmList">
+		<![CDATA[
+	    SELECT     MDI_LINKNO,
+	               MTI_TEAMNO, FN_GETDPTNAME(MTI_TEAMNO) TXT_TEAMNAME,
+	               MVI_VVRMNO,
+	               FN_GETANICLSNAME (MAI_ANICODE, '1') TXT_MAI_ANICODE,
+	               DENSE_RANK() OVER (
+	                              ORDER BY MDI_LINKNO, MTI_TEAMNO 
+	               ) ANI_ROW,
+	               ROW_NUMBER() OVER (PARTITION BY MDI_LINKNO, MTI_TEAMNO, FN_GETANICLSNAME (MAI_ANICODE, '1') ORDER BY FN_GETANICLSNAME (MAI_ANICODE, '1') ) ANILIST_ROW,
+	               MAC_NAME,
+	               SUM (CASE WHEN (MAI_SEX IN ('1', '3')) THEN 1 ELSE 0 END)
+	               - SUM(CASE
+	                         WHEN B.RENTEDATE >= SYSDATE AND (MAI_SEX IN ('1', '3'))
+	                         THEN
+	                             1
+	                         ELSE
+	                             0
+	                     END) CNT_MAI_SEX_M,
+	               SUM (CASE WHEN (MAI_SEX IN ('2', '4')) THEN 1 ELSE 0 END)
+	               - SUM(CASE
+	                         WHEN B.RENTEDATE >= SYSDATE AND (MAI_SEX IN ('2', '4'))
+	                         THEN
+	                             1
+	                         ELSE
+	                             0
+	                     END) CNT_MAI_SEX_F,
+	               SUM (CASE WHEN (MAI_SEX IN ('5', '6')) THEN 1 ELSE 0 END)
+	               - SUM(CASE
+	                         WHEN B.RENTEDATE >= SYSDATE AND (MAI_SEX IN ('5', '6'))
+	                         THEN
+	                             1
+	                         ELSE
+	                             0
+	                     END) CNT_MAI_SEX_A,
+	               COUNT (MAI_SEX)
+	               - SUM (CASE WHEN TO_CHAR(B.RENTEDATE,'YYYY-MM-DD') >= #{cal_1} THEN 1 ELSE 0 END) CNT_MAI_SEX,
+	               SUM (CASE WHEN TO_CHAR(B.RENTEDATE,'YYYY-MM-DD') >= #{cal_1} THEN 1 ELSE 0 END) CNT_BOYUK,
+	              (SELECT MVI_VVRMNAME FROM MF_VVRM_INFO WHERE MVI_VVRMNO = VI.MVI_VVRMNO) MVI_VVRMNAME
+	        FROM   MF_ANI_INFO A,
+	               MF_ANI_CLS,
+	               MF_VVRM_INFO VI,
+	               MF_TEAM_INFO,
+	               MF_DPT_INFO,
+	               DT_ANI_IO C,
+	               (  SELECT   DAIO_ANICODE,
+	                           MAX(CASE
+	                                   WHEN NOT (DAIO_IOTYPE = '2' AND DAIO_RESN = '1')
+	                                   THEN
+	                                       DAIO_IODATE
+	                               END)
+	                               AS DATE1,
+	                           MAX(CASE
+	                                   WHEN DAIO_IOTYPE = '1' AND DAIO_BOYUKSTS = 'Y'
+	                                   THEN
+	                                       DAIO_RENTEDATE
+	                               END)
+	                               AS RENTEDATE
+	                    FROM   DT_ANI_IO
+	                   WHERE   TO_CHAR(DAIO_IODATE,'YYYY-MM-DD') < #{cal_1}
+	                   GROUP BY   DAIO_ANICODE ) B
+	       WHERE   B.DAIO_ANICODE = MAI_ANICODE
+	               AND MAI_ANICLSCODE = MAC_ANICLSCODE
+	               AND MVI_TEAMNO = MTI_TEAMNO
+	               AND MTI_DPTNO = MDI_LINKNO
+	               AND MAI_VVRMNO = MVI_VVRMNO
+	               AND C.DAIO_IODATE = B.DATE1
+	               AND C.DAIO_ANICODE = B.DAIO_ANICODE
+	               AND (MAI_DETHTYPE = '1'
+	                    OR MAI_DETHTYPE = '2' AND NOT TO_CHAR(MAI_DETHDATE,'YYYY-MM-DD') < #{cal_1})
+	               AND NOT C.DAIO_IOTYPE = '2'
+	               AND A.CMN_DEL_STS = 'N'
+		]]>
+				<if test="schVvrm != '' and schVvrm != null">
+			    AND MAI_VVRMNO = #{schVvrm}
+				</if>
+	    GROUP BY   MDI_LINKNO,
+	               MTI_TEAMNO,
+	               MVI_VVRMNO,
+	               FN_GETANICLSNAME (MAI_ANICODE, '1'),
+	               MAC_NAME
+		ORDER BY MDI_LINKNO, MTI_TEAMNO
+	</sql>
+
+	<select id="selectAniVvrmList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	<include refid="AniVvrmList" />
+	</select>
+
+	<select id="selectAniVvrmTotList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH VVRM_LIST AS (
+			<include refid="AniVvrmList" />
+		) 
+		SELECT MDI_LINKNO, MTI_TEAMNO, FN_GETDPTNAME(MTI_TEAMNO) TXT_TEAMNAME,
+		            SUM (CNT_MAI_SEX_M) CNT_MAI_SEX_M,
+		            SUM (CNT_MAI_SEX_F) CNT_MAI_SEX_F,
+		            SUM (CNT_MAI_SEX_A) CNT_MAI_SEX_A,
+		            SUM (CNT_MAI_SEX) CNT_MAI_SEX,
+		            SUM (CNT_BOYUK) CNT_BOYUK
+		FROM VVRM_LIST
+		GROUP BY MDI_LINKNO, MTI_TEAMNO
+		ORDER BY MDI_LINKNO, MTI_TEAMNO
+	</select>
+	
+</mapper>

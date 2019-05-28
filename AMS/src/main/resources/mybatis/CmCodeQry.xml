@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CmCode">
+
+	<select id="selectAniClsList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT 
+		    MAC_ANICLSCODE, MAC_ANICODE1, MAC_ANICODE2, 
+		    MAC_ANICODE3, MAC_ANICODE4_SEQ, MAC_NAME, 
+		    MAC_ENAME, MAC_SNAME, MAC_CITES, 
+		    MAC_ENDANG, MAC_NATMON, MAC_RANK, 
+		    MAC_ORGPLACE, MAC_BRDPERID, MAC_GESTPERID, 
+		    CMN_DEL_STS
+		FROM MF_ANI_CLS
+		WHERE CMN_DEL_STS = 'N'
+		AND MAC_ANICODE1 IS NOT NULL
+		<choose>
+		<when test="(clsType == 1)">
+		AND MAC_ANICODE2 = 0
+		</when>
+		<when test="(clsType == 2)">
+			<if test="mac_anicode1 != ''">
+		AND MAC_ANICODE1 = #{mac_anicode1}
+			</if>
+		AND MAC_ANICODE2 != 0 AND MAC_ANICODE3 = 0
+		</when>
+		<when test="(clsType == 3)">
+			<if test="mac_anicode1 != ''">
+		AND MAC_ANICODE1 = #{mac_anicode1}
+			</if>
+			<if test="mac_anicode2 != ''">
+		AND MAC_ANICODE2 = #{mac_anicode2} 
+			</if>
+		AND MAC_ANICODE3 != 0 AND MAC_ANICODE4_SEQ = 0
+		</when>
+		<when test="(clsType == 4)">
+			<if test="mac_anicode1 != ''">
+		AND MAC_ANICODE1 = #{mac_anicode1}
+			</if>
+			<if test="mac_anicode2 != ''">
+		AND MAC_ANICODE2 = #{mac_anicode2} 
+			</if>
+			<if test="mac_anicode3 != ''">
+		AND MAC_ANICODE3 = #{mac_anicode3} 
+			</if>
+		AND MAC_ANICODE4_SEQ != 0
+		</when>
+		</choose>
+		<if test="schKeyword != ''">
+		AND MAC_NAME LIKE '%' || #{schKeyword} || '%'
+		</if>
+		ORDER BY MAC_ANICLSCODE
+	</select>
+
+	<select id="selectSCodeList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT 
+		    MCC_L_CODE, MCC_M_CODE, MCC_S_CODE, 
+		    MCC_L_NAME, MCC_M_NAME, MCC_S_NAME, 
+		    MCC_CODE_TYPE, MCC_SORT_ORDER
+		FROM MF_COMM_CODE
+		WHERE CMN_DEL_STS = 'N'
+		AND MCC_L_CODE = #{mcc_l_code}
+		AND MCC_M_CODE = #{mcc_m_code}
+		AND MCC_S_CODE != ' '
+		ORDER BY MCC_SORT_ORDER, MCC_S_CODE
+	</select>
+	
+	<select id="selectVvrmList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT MVI_VVRMNO,
+		       MVI_VVRMNAME,
+		       MVI_TEAMNO,
+		       MVI_SYPATTN
+		FROM   MF_VVRM_INFO
+		WHERE CMN_DEL_STS = 'N'
+		ORDER BY   MVI_VVRMNAME
+	</select>
+	
+	<select id="selectAuthGrpList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT 
+		    MCC_L_CODE, MCC_M_CODE, MCC_S_CODE, 
+		    MCC_L_NAME, MCC_M_NAME, MCC_S_NAME, 
+		    MCC_CODE_TYPE, MCC_SORT_ORDER
+		FROM MF_COMM_CODE
+		WHERE CMN_DEL_STS = 'N'
+		AND MCC_L_CODE = '100'
+		AND MCC_M_CODE = '120'
+		AND MCC_S_CODE != ' '
+		ORDER BY MCC_SORT_ORDER, MCC_S_CODE
+	</select>
+	
+	<select id="selectTeamAuthGrpList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT 
+		    MCC_L_CODE, MCC_M_CODE, MCC_S_CODE, 
+		    MCC_L_NAME, MCC_M_NAME, MCC_S_NAME, 
+		    MCC_CODE_TYPE, MCC_SORT_ORDER
+		FROM MF_COMM_CODE A
+		WHERE CMN_DEL_STS = 'N'
+		AND MCC_L_CODE = '100'
+		AND MCC_M_CODE = '120'
+		AND MCC_S_CODE != ' '
+        AND EXISTS (
+            SELECT MAG_GRPCODE
+            FROM MF_AUTH_GRP A
+            WHERE CMN_DEL_STS = 'N'
+            AND MAG_GRPCODE != 'SA'
+            AND MAG_GRPCODE = A.MCC_S_CODE
+            AND EXISTS (
+                SELECT 1 FROM MF_TEAM_INFO
+                WHERE MTI_TEAMNO = (SELECT MUI_TEAMNO 
+                                    FROM MF_USER_INFO
+                                    WHERE MUI_ID = A.MAG_ID)
+                AND MTI_TEAMNO =  #{mti_teamno}
+            )
+        )		
+	</select>
+	
+	<select id="selectDptList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT 
+		    MDI_LINKNO, MDI_DPTNAME
+		FROM MF_DPT_INFO
+		WHERE CMN_DEL_STS = 'N'
+		ORDER BY   MDI_DPTNAME
+	</select>
+	
+	<select id="selectDptTeamList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT 
+		    MTI_TEAMNO, MTI_TEAMNAME
+		FROM MF_TEAM_INFO
+		WHERE MTI_DPTNO = #{mti_dptno} 
+		AND CMN_DEL_STS = 'N'
+		ORDER BY   MTI_TEAMNAME
+	</select>
+	
+</mapper>

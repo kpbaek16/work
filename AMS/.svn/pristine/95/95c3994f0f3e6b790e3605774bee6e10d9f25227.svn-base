@@ -1,0 +1,522 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Treat0406">
+	<select id="selectInspctMgr" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT * FROM (
+		( SELECT ROWNUM AS SEQ, e.* FROM (
+		<if test='KS_DIVISION != "" and KS_DIVISION != "A"'>
+		<if test='KS_DIVISION == "1"'>
+		select JJDKY_DocNo, JJDKY_KSType, fn_getComCode_Cls3Name('500', '500', JJDKY_KSType) as KSTypeName,
+			   JJDKY_JRNo, nvl(to_char(JJDKY_KSDate,'yyyy-mm-dd'), '1900-01-01') as JJDKY_KSDate,
+			   JJDKY_KSNo, fn_getComCode_Cls3Name('500', '501', JJDKY_KSNo) as KSNoName, JJDKY_KSSts,
+			   MAI_TeamNo, fn_getDptName(MAI_TeamNo) as DptName,
+			   MAI_VvrmNo, fn_getVvrmName(MAI_VvrmNo) as VvrmName, MAI_AniCode as BAA_AniCode, MAC_Name, MAI_BName,
+			   MAI_Sex, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as SexName,
+			   JJDKY_Cmnt, to_char(JJDKY_KSDateYY, 'yyyy-mm-dd') as JJDKY_KSDateYY,
+			   JJJ_JRType, JJJ_RCNo
+		  from JN_JINRYO_DATE_KY, MF_ANI_CLS, MF_ANI_INFO, BZ_ANI_ATCH, JN_JINRYO_JNL
+		  where MAI_AniClsCode = MAC_AniClsCode
+		    and MAI_AniCode    = BAA_AniCode 
+		    and JJJ_RCNo       = BAA_DocNo
+		    and JJDKY_JRNo     = JJJ_DocNo
+		    and JJDKY_KSType   = '1'
+		</if>
+		<if test='KS_DIVISION == "2"'>
+		select JJDKY_DocNo, JJDKY_KSType, fn_getComCode_Cls3Name('500', '500', JJDKY_KSType) as KSTypeName,
+		       JJDKY_JRNo, nvl(to_char(JJDKY_KSDate,'yyyy-mm-dd'), '1900-01-01') as JJDKY_KSDate,
+		  	   JJDKY_KSNo, fn_getComCode_Cls3Name('500', '501', JJDKY_KSNo) as KSNoName, JJDKY_KSSts,
+		  	   MAI_TeamNo, fn_getDptName(MAI_TeamNo) as DptName,
+		  	   MAI_VvrmNo, fn_getVvrmName(MAI_VvrmNo) as VvrmName, PDR_AniCode as BAA_AniCode, MAC_Name, MAI_BName,
+		  	   MAI_Sex, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as SexName,
+		  	   JJDKY_Cmnt, to_char(JJDKY_KSDateYY, 'yyyy-mm-dd') as JJDKY_KSDateYY,
+		  	   '부검' as JJJ_JRType, PBR_ReqDocNo as JJJ_RCNo
+		  from JN_JINRYO_DATE_KY, MF_ANI_CLS, MF_ANI_INFO,
+		  	   PS_DETH_REPT, PS_BUKM_REPT
+		 where MAI_AniClsCode = MAC_AniClsCode
+		   and MAI_AniCode    = PDR_AniCode
+		   and PBR_ReqDocNo   = PDR_DocNo
+		   and JJDKY_JRNo     = PBR_DocNo
+		   and JJDKY_KSType   = '2'
+		</if>
+		<if test="cal_1 != ''">
+		   and JJDKY_KSDateYY <![CDATA[>=]]> to_date(#{cal_1},'yyyy-mm-dd') 
+		</if>
+		<if test="cal_2 != ''">
+		   and JJDKY_KSDateYY <![CDATA[<=]]> to_date(#{cal_2} || '23:59:59','YYYY-MM-DD hh24:mi:ss') 
+		</if>
+		<if test="jinryoNum != ''">
+		   and JJDKY_JRNo LIKE '%' || #{jinryoNum} || '%'
+		</if>
+		<if test="aniName != ''">
+		   and MAC_Name LIKE '%' || #{aniName} || '%'
+		</if>
+		<if test="aniNum != ''">
+		   and BAA_AniCode LIKE '%' || #{aniNum} || '%'
+		</if>
+		<if test="KSTYPE != ''">
+		   and JJDKY_KSNo = #{KSTYPE}
+		</if>
+		<if test="KS_STATUS != ''">
+		   and JJDKY_KSSts = #{KS_STATUS}
+		</if>
+		</if>
+		<if test='KS_DIVISION == "" or KS_DIVISION == "A"'>
+			select JJDKY_DocNo, JJDKY_KSType, KSTypeName, JJDKY_JRNo, JJDKY_KSDate, JJDKY_KSNo, KSNoName, JJDKY_KSSts,
+				   MAI_TeamNo, DptName, MAI_VvrmNo, VvrmName, BAA_AniCode, MAC_Name, MAI_BName,
+				   MAI_Sex, SexName, JJDKY_Cmnt, JJDKY_KSDateYY, JJJ_JRType, JJJ_RCNo
+              from (
+                  		select JJDKY_DocNo, JJDKY_KSType, fn_getComCode_Cls3Name('500', '500', JJDKY_KSType) as KSTypeName,
+			   			   JJDKY_JRNo, nvl(to_char(JJDKY_KSDate,'yyyy-mm-dd'), '1900-01-01') as JJDKY_KSDate,
+			  			   JJDKY_KSNo, fn_getComCode_Cls3Name('500', '501', JJDKY_KSNo) as KSNoName, JJDKY_KSSts,
+			   			   MAI_TeamNo, fn_getDptName(MAI_TeamNo) as DptName,
+			   			   MAI_VvrmNo, fn_getVvrmName(MAI_VvrmNo) as VvrmName, MAI_AniCode as BAA_AniCode, MAC_Name, MAI_BName,
+			   			   MAI_Sex, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as SexName,
+			   			   JJDKY_Cmnt, to_char(JJDKY_KSDateYY, 'yyyy-mm-dd') as JJDKY_KSDateYY,
+			   			   JJJ_JRType, JJJ_RCNo
+		  			  from JN_JINRYO_DATE_KY, MF_ANI_CLS, MF_ANI_INFO, BZ_ANI_ATCH, JN_JINRYO_JNL
+		  			 where MAI_AniClsCode = MAC_AniClsCode
+		    		   and MAI_AniCode    = BAA_AniCode 
+		   			   and JJJ_RCNo       = BAA_DocNo
+		    		   and JJDKY_JRNo     = JJJ_DocNo
+		    		   and JJDKY_KSType   = '1'
+              		union
+					select JJDKY_DocNo, JJDKY_KSType, fn_getComCode_Cls3Name('500', '500', JJDKY_KSType) as KSTypeName,
+		         		   JJDKY_JRNo, nvl(to_char(JJDKY_KSDate,'yyyy-mm-dd'), '1900-01-01') as JJDKY_KSDate,
+		  		 		   JJDKY_KSNo, fn_getComCode_Cls3Name('500', '501', JJDKY_KSNo) as KSNoName, JJDKY_KSSts,
+		  		 		   MAI_TeamNo, fn_getDptName(MAI_TeamNo) as DptName,
+		  		 		   MAI_VvrmNo, fn_getVvrmName(MAI_VvrmNo) as VvrmName, PDR_AniCode as BAA_AniCode, MAC_Name, MAI_BName,
+		  		 		   MAI_Sex, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as SexName,
+		  		 		   JJDKY_Cmnt, to_char(JJDKY_KSDateYY, 'yyyy-mm-dd') as JJDKY_KSDateYY,
+		  		 		   '부검' as JJJ_JRType, PBR_ReqDocNo as JJJ_RCNo
+		  			  from JN_JINRYO_DATE_KY, MF_ANI_CLS, MF_ANI_INFO,
+		  	     		   PS_DETH_REPT, PS_BUKM_REPT
+		   			 where MAI_AniClsCode = MAC_AniClsCode
+		     		   and MAI_AniCode    = PDR_AniCode
+		     		   and PBR_ReqDocNo   = PDR_DocNo
+		     		   and JJDKY_JRNo     = PBR_DocNo
+		     		   and JJDKY_KSType   = '2'
+                   )
+             where 1=1
+			<if test="cal_1 != ''">
+			   and JJDKY_KSDateYY <![CDATA[>=]]> to_date(#{cal_1},'yyyy-mm-dd') 
+			</if>
+			<if test="cal_2 != ''">
+			   and JJDKY_KSDateYY <![CDATA[<=]]> to_date(#{cal_2} || '23:59:59','YYYY-MM-DD hh24:mi:ss') 
+			</if>
+			<if test="jinryoNum != ''">
+			   and JJDKY_JRNo LIKE '%' || #{jinryoNum} || '%'
+			</if>
+			<if test="aniName != ''">
+			   and MAC_Name LIKE '%' || #{aniName} || '%'
+			</if>
+			<if test="aniNum != ''">
+		       and BAA_AniCode LIKE '%' || #{aniNum} || '%'
+			</if>
+			<if test="KSTYPE != ''">
+			   and JJDKY_KSNo = #{KSTYPE}
+		    </if>
+		    <if test="KS_STATUS != ''">
+		   	   and JJDKY_KSSts = #{KS_STATUS}
+			</if>
+		</if>
+		order by JJDKY_KSType, JJDKY_JRNo, JJDKY_KSDateYY, JJDKY_KSNo
+		    ) e
+		)
+	) WHERE SEQ <![CDATA[>=]]> 10 * (#{page}-1) + 1 AND SEQ <![CDATA[<=]]> 10 * #{page}
+	</select>
+	<select id="selectInspctMgrCount" resultType="Integer" parameterType="hashmap">
+		<if test='KS_DIVISION != "" and KS_DIVISION != "A"'>
+		<if test='KS_DIVISION == "1"'>
+		select count(*) cnt
+		  from JN_JINRYO_DATE_KY, MF_ANI_CLS, MF_ANI_INFO, BZ_ANI_ATCH, JN_JINRYO_JNL
+		  where MAI_AniClsCode = MAC_AniClsCode
+		    and MAI_AniCode    = BAA_AniCode 
+		    and JJJ_RCNo       = BAA_DocNo
+		    and JJDKY_JRNo     = JJJ_DocNo
+		    and JJDKY_KSType   = '1'
+		</if>
+		<if test='KS_DIVISION == "2"'>
+		select count(*) cnt
+		  from JN_JINRYO_DATE_KY, MF_ANI_CLS, MF_ANI_INFO,
+		  	   PS_DETH_REPT, PS_BUKM_REPT
+		 where MAI_AniClsCode = MAC_AniClsCode
+		   and MAI_AniCode    = PDR_AniCode
+		   and PBR_ReqDocNo   = PDR_DocNo
+		   and JJDKY_JRNo     = PBR_DocNo
+		   and JJDKY_KSType   = '2'
+		</if>
+		<if test="cal_1 != ''">
+		   and JJDKY_KSDateYY <![CDATA[>=]]> to_date(#{cal_1},'yyyy-mm-dd') 
+		</if>
+		<if test="cal_2 != ''">
+		   and JJDKY_KSDateYY <![CDATA[<=]]> to_date(#{cal_2} || '23:59:59','YYYY-MM-DD hh24:mi:ss') 
+		</if>
+		<if test="jinryoNum != ''">
+		   and JJDKY_JRNo LIKE '%' || #{jinryoNum} || '%'
+		</if>
+		<if test="aniName != ''">
+		   and MAC_Name LIKE '%' || #{aniName} || '%'
+		</if>
+		<if test="aniNum != ''">
+		   and BAA_AniCode LIKE '%' || #{aniNum} || '%'
+		</if>
+		<if test="KSTYPE != ''">
+		   and JJDKY_KSNo = #{KSTYPE}
+		</if>
+		<if test="KS_STATUS != ''">
+		   and JJDKY_KSSts = #{KS_STATUS}
+		</if>
+		</if>
+		<if test='KS_DIVISION == "" or KS_DIVISION == "A"'>
+			select count(*) cnt
+              from (
+                  		select JJDKY_DocNo, JJDKY_KSType, fn_getComCode_Cls3Name('500', '500', JJDKY_KSType) as KSTypeName,
+			   			   JJDKY_JRNo, nvl(to_char(JJDKY_KSDate,'yyyy-mm-dd'), '1900-01-01') as JJDKY_KSDate,
+			  			   JJDKY_KSNo, fn_getComCode_Cls3Name('500', '501', JJDKY_KSNo) as KSNoName, JJDKY_KSSts,
+			   			   MAI_TeamNo, fn_getDptName(MAI_TeamNo) as DptName,
+			   			   MAI_VvrmNo, fn_getVvrmName(MAI_VvrmNo) as VvrmName, MAI_AniCode as BAA_AniCode, MAC_Name, MAI_BName,
+			   			   MAI_Sex, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as SexName,
+			   			   JJDKY_Cmnt, to_char(JJDKY_KSDateYY, 'yyyy-mm-dd') as JJDKY_KSDateYY,
+			   			   JJJ_JRType, JJJ_RCNo
+		  			  from JN_JINRYO_DATE_KY, MF_ANI_CLS, MF_ANI_INFO, BZ_ANI_ATCH, JN_JINRYO_JNL
+		  			 where MAI_AniClsCode = MAC_AniClsCode
+		    		   and MAI_AniCode    = BAA_AniCode 
+		   			   and JJJ_RCNo       = BAA_DocNo
+		    		   and JJDKY_JRNo     = JJJ_DocNo
+		    		   and JJDKY_KSType   = '1'
+              		union
+					select JJDKY_DocNo, JJDKY_KSType, fn_getComCode_Cls3Name('500', '500', JJDKY_KSType) as KSTypeName,
+		         		   JJDKY_JRNo, nvl(to_char(JJDKY_KSDate,'yyyy-mm-dd'), '1900-01-01') as JJDKY_KSDate,
+		  		 		   JJDKY_KSNo, fn_getComCode_Cls3Name('500', '501', JJDKY_KSNo) as KSNoName, JJDKY_KSSts,
+		  		 		   MAI_TeamNo, fn_getDptName(MAI_TeamNo) as DptName,
+		  		 		   MAI_VvrmNo, fn_getVvrmName(MAI_VvrmNo) as VvrmName, PDR_AniCode as BAA_AniCode, MAC_Name, MAI_BName,
+		  		 		   MAI_Sex, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as SexName,
+		  		 		   JJDKY_Cmnt, to_char(JJDKY_KSDateYY, 'yyyy-mm-dd') as JJDKY_KSDateYY,
+		  		 		   '부검' as JJJ_JRType, PBR_ReqDocNo as JJJ_RCNo
+		  			  from JN_JINRYO_DATE_KY, MF_ANI_CLS, MF_ANI_INFO,
+		  	     		   PS_DETH_REPT, PS_BUKM_REPT
+		   			 where MAI_AniClsCode = MAC_AniClsCode
+		     		   and MAI_AniCode    = PDR_AniCode
+		     		   and PBR_ReqDocNo   = PDR_DocNo
+		     		   and JJDKY_JRNo     = PBR_DocNo
+		     		   and JJDKY_KSType   = '2'
+                   )
+             where 1=1
+			<if test="cal_1 != ''">
+			   and JJDKY_KSDateYY <![CDATA[>=]]> to_date(#{cal_1},'yyyy-mm-dd') 
+			</if>
+			<if test="cal_2 != ''">
+			   and JJDKY_KSDateYY <![CDATA[<=]]> to_date(#{cal_2} || '23:59:59','YYYY-MM-DD hh24:mi:ss') 
+			</if>
+			<if test="jinryoNum != ''">
+			   and JJDKY_JRNo LIKE '%' || #{jinryoNum} || '%'
+			</if>
+			<if test="aniName != ''">
+			   and MAC_Name LIKE '%' || #{aniName} || '%'
+			</if>
+			<if test="aniNum != ''">
+		       and BAA_AniCode LIKE '%' || #{aniNum} || '%'
+			</if>
+			<if test="KSTYPE != ''">
+			   and JJDKY_KSNo = #{KSTYPE}
+		    </if>
+		    <if test="KS_STATUS != ''">
+		   	   and JJDKY_KSSts = #{KS_STATUS}
+			</if>
+		</if>
+	</select>
+	<select id="selectKSDataList" resultType="java.util.LinkedHashMap"  parameterType="hashmap">
+	  select JJDKY_DocNo, nvl(to_char(JJDKY_KSDate,'YYYY-MM-DD'), '1900-01-01') as JJDKY_KSDate,
+	  		 JJDKY_KSNo, fn_getComCode_Cls3Name('500', '501', JJDKY_KSNo) as KSNoName, JJDKY_KSSts,
+	  		 JJDKY_Cmnt, to_char(JJDKY_KSDateYY,'YYYY-MM-DD') as JJDKY_KSDateYY, JJJ_JRType, JJJ_RCNo
+	    from JN_JINRYO_DATE_KY, JN_JINRYO_JNL
+	   where JJDKY_JRNo     = JJJ_DocNo 
+	     and JJDKY_KSType   = '1'
+	     and JJDKY_JRNo     = #{JJJ_DOCNO}
+	  	 and JJDKY_KSDateYY   = to_date(#{DTLDay}, 'yyyy-mm-dd')
+	   order by JJDKY_KSNo 
+	</select>
+	<select id="getKSDataInfo" resultType="java.util.LinkedHashMap"  parameterType="hashmap">
+	  select *
+	    from JN_JINRYO_DATE_KY
+	   where JJDKY_DocNo   = #{KSDOCNO}
+		 and JJDKY_KSType  = '1'
+		 and JJDKY_KSNo    = #{KSNO}
+		 and JJDKY_KSSeqNo = '1'
+	</select>
+	<select id="getKS01List" resultType="java.util.LinkedHashMap"  parameterType="hashmap">
+	SELECT rownum as SEQ, e.* FROM (
+	select MBI_BdInspCode, MCC_S_NAME, MCC_COM_S1, nvl(MBI_Mean,0.0) as MBI_Mean, nvl(MBI_StdDevi, 0.0) as MBI_StdDevi,
+       	   JJDKBL_Rslt, nvl(JJDKBL_Cmnt, '') as JJDKBL_Cmnt
+  	  from MF_COMM_CODE,
+       	   MF_BDINSP_ITEM left join JN_JINRYO_DATE_KBL
+                                    on MBI_BdInspCode = JJDKBL_Item
+                     	            and JJDKBL_KSDate = to_date(#{DTLDay}, 'yyyy-mm-dd')
+                         	        and JJDKBL_Item = MBI_BdInspCode
+                             	    and JJDKBL_KSType = #{KSTYPE}
+                                 	and JJDKBL_DocNo  = #{KSDOCNO}
+ 	 where MCC_L_CODE  = '500'
+   	   and MCC_M_CODE  = '502'
+   	   and MCC_S_CODE  = MBI_BdInspCode
+   	   and MBI_AniClsCode = #{ANICLS}
+   	) e
+	</select>
+	<select id="getKS02List" resultType="java.util.LinkedHashMap"  parameterType="hashmap">
+	SELECT rownum as SEQ, e.* FROM (
+	select JJDKSK_WayNo, JJDKSK_Way, JJDKSK_Part, JJDKSK_Rslt
+  	  from JN_JINRYO_DATE_KSK
+ 	 where JJDKSK_KSDate  = to_date(#{DTLDay}, 'yyyy-mm-dd')
+   	   and JJDKSK_KSType  = #{KSTYPE}
+   	   and JJDKSK_DocNo  = #{KSDOCNO}
+   	) e
+	</select>
+	<select id="getKS03List" resultType="java.util.LinkedHashMap"  parameterType="hashmap">
+	SELECT rownum as SEQ, e.* FROM (
+	select JJDKJK_WayNo, JJDKJK_Way, JJDKJK_Part, JJDKJK_Rslt
+  	  from JN_JINRYO_DATE_KJK
+ 	 where JJDKJK_KSDate  = to_date(#{DTLDay}, 'yyyy-mm-dd')
+   	   and JJDKJK_KSType  = #{KSTYPE}
+   	   and JJDKJK_DocNo  = #{KSDOCNO}
+   	) e
+	</select>
+	<select id="getKS04List" resultType="java.util.LinkedHashMap"  parameterType="hashmap">
+	SELECT rownum as SEQ, e.* FROM (
+	select JJDKHS_Rslt ,JJDKHS_Part, JJDKHS_DSKyun
+  	  from JN_JINRYO_DATE_KHS
+ 	 where JJDKHS_KSDate  = to_date(#{DTLDay}, 'yyyy-mm-dd')
+   	   and JJDKHS_KSType  = #{KSTYPE}
+   	   and JJDKHS_DocNo  = #{KSDOCNO}
+   	) e
+	</select>
+	<select id="getKS05List" resultType="java.util.LinkedHashMap"  parameterType="hashmap">
+	SELECT rownum as SEQ, e.* FROM (
+	select JJDKKS_Way, JJDKKS_Part, JJDKKS_Rslt, JJDKKS_RsltDC 
+  	  from JN_JINRYO_DATE_KKS
+ 	 where JJDKKS_KSDate  = to_date(#{DTLDay}, 'yyyy-mm-dd')
+   	   and JJDKKS_KSType  = #{KSTYPE}
+   	   and JJDKKS_DocNo  = #{KSDOCNO}
+   	) e
+	</select>
+	<select id="getKS06List" resultType="java.util.LinkedHashMap"  parameterType="hashmap">
+	SELECT rownum as SEQ, e.* FROM (
+	select JJDKJH_Way, JJDKJH_Part, JJDKJH_Rslt, JJDKJH_RsltDC
+  	  from JN_JINRYO_DATE_KJH
+ 	 where JJDKJH_KSDate  = to_date(#{DTLDay}, 'yyyy-mm-dd')
+   	   and JJDKJH_KSType  = #{KSTYPE}
+   	   and JJDKJH_DocNo  = #{KSDOCNO}
+   	) e
+	</select>
+	<select id="getKS07List" resultType="java.util.LinkedHashMap"  parameterType="hashmap">
+	select JJDKPC_item, JJDKPC_SiRyo, JJDKPC_Rslt, BDA_CntntType, BDA_UpPath, BDA_AtchFile, BDA_Cmnt
+  	  FROM JN_JINRYO_DATE_KPC left join BZ_DATA_ATCH on(BDA_DocNo = JJDKPC_DocNo AND BDA_BzCls1 = 'PCR')
+ 	 where JJDKPC_KSDate  = to_date(#{DTLDay}, 'yyyy-mm-dd')
+   	   and JJDKPC_KSType  = #{KSTYPE}
+   	   and JJDKPC_DocNo  = #{KSDOCNO}
+	</select>
+	<select id="getKS08List" resultType="java.util.LinkedHashMap"  parameterType="hashmap">
+	SELECT rownum as SEQ, e.* FROM (
+	select MCC_S_CODE, MCC_S_NAME, JJDKSB_RsltDC, JJDKSB_Rslt
+  	  FROM MF_COMM_CODE LEFT OUTER JOIN JN_JINRYO_DATE_KSB ON (MCC_S_CODE = JJDKSB_Item 
+  	  													   and JJDKSB_KSDate  = to_date(#{DTLDay}, 'yyyy-mm-dd') 
+  	  													   and JJDKSB_KSType  = #{KSTYPE}
+  	  													   and JJDKSB_DocNo  = #{KSDOCNO})
+  	 where MCC_L_CODE = '500' 
+  	   AND MCC_M_CODE = '5021'
+       AND not MCC_S_CODE = ' ' 
+       AND MCC_S_CODE IS NOT NULL
+     order by MCC_SORT_ORDER 
+	) e
+	</select>
+	<select id="getKS09List" resultType="java.util.LinkedHashMap"  parameterType="hashmap">
+	 select * FROM JN_JINRYO_DATE_KXR
+ 	  where JJDKXR_KSDate  = to_date(#{DTLDay}, 'yyyy-mm-dd')
+   	    and JJDKXR_KSType  = #{KSTYPE}
+   	    and JJDKXR_DocNo  = #{KSDOCNO}
+	</select>
+	<select id="getKS10List" resultType="java.util.LinkedHashMap"  parameterType="hashmap">
+	 select * FROM JN_JINRYO_DATE_KEP
+ 	  where JJDKEP_KSDate  = to_date(#{DTLDay}, 'yyyy-mm-dd')
+   	    and JJDKEP_KSType  = #{KSTYPE}
+   	    and JJDKEP_DocNo  = #{KSDOCNO}
+	</select>
+	<select id="getK01DataInfo" resultType="java.util.LinkedHashMap"  parameterType="hashmap">
+	  select *
+	    from JN_JINRYO_DATE_KBL
+	   where JJDKBL_DocNo   = #{KSDOCNO}
+		 and JJDKBL_KSDate  = #{DTLDay}
+		 and JJDKBL_Item    = #{ITEM}
+	</select>
+	<insert id="insertK01Info" parameterType="hashmap">
+		 insert into JN_JINRYO_DATE_KBL ( JJDKBL_DocNo, JJDKBL_KSDate, JJDKBL_KSType, JJDKBL_Item, JJDKBL_Rslt, JJDKBL_Cmnt, 
+		 								  CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID )
+		 values (#{KSDOCNO}, to_date(#{DTLDay}, 'yyyy-mm-dd'), #{KSTYPE}, #{ITEM}, #{RSLT}, #{CMNT},
+		 		'N', SYSDATE,'TREAT0406',#{USERID},SYSDATE,'TREAT0406',#{USERID}) 
+	</insert>
+	<insert id="insertK02Info" parameterType="hashmap">
+		 insert into JN_JINRYO_DATE_KSK ( JJDKSK_DocNo, JJDKSK_KSDate, JJDKSK_KSType, JJDKSK_WayNo, JJDKSK_Way, JJDKSK_Part, JJDKSK_Rslt,
+		 								  CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID )
+		 values (#{KSDOCNO}, to_date(#{DTLDay}, 'yyyy-mm-dd'), #{KSTYPE}, #{WAYNO}, #{WAY}, #{PART}, #{RSLT},
+		 		'N', SYSDATE,'TREAT0406',#{USERID},SYSDATE,'TREAT0406',#{USERID}) 
+	</insert>
+	<insert id="insertK03Info" parameterType="hashmap">
+		 insert into JN_JINRYO_DATE_KJK ( JJDKJK_DocNo, JJDKJK_KSDate, JJDKJK_KSType, JJDKJK_WayNo, JJDKJK_Way, JJDKJK_Part, JJDKJK_Rslt,
+		 								  CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID )
+		 values (#{KSDOCNO}, to_date(#{DTLDay}, 'yyyy-mm-dd'), #{KSTYPE}, #{WAYNO}, #{WAY}, #{PART}, #{RSLT},
+		 		'N', SYSDATE,'TREAT0406',#{USERID},SYSDATE,'TREAT0406',#{USERID}) 
+	</insert>
+	<insert id="insertK04Info" parameterType="hashmap">
+		 insert into JN_JINRYO_DATE_KHS ( JJDKHS_DocNo, JJDKHS_KSDate, JJDKHS_KSType, JJDKHS_PartNo, JJDKHS_Part, JJDKHS_DSKyun, JJDKHS_Rslt,
+		 								  CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID )
+		 values (#{KSDOCNO}, to_date(#{DTLDay}, 'yyyy-mm-dd'), #{KSTYPE}, #{PARTNO}, #{PART}, #{DSKYUN}, #{RSLT},
+		 		'N', SYSDATE,'TREAT0406',#{USERID},SYSDATE,'TREAT0406',#{USERID}) 
+	</insert>
+	<insert id="insertK05Info" parameterType="hashmap">
+		 insert into JN_JINRYO_DATE_KKS ( JJDKKS_DocNo, JJDKKS_KSDate, JJDKKS_KSType, JJDKKS_WayNo, JJDKKS_Way, JJDKKS_Part, JJDKKS_Rslt, JJDKKS_RsltDC, 
+		 								  CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID )
+		 values (#{KSDOCNO}, to_date(#{DTLDay}, 'yyyy-mm-dd'), #{KSTYPE}, #{WAYNO}, #{WAY}, #{PART}, #{RSLT}, #{RSLTDC},
+		 		'N', SYSDATE,'TREAT0406',#{USERID},SYSDATE,'TREAT0406',#{USERID}) 
+	</insert>
+	<insert id="insertK06Info" parameterType="hashmap">
+		 insert into JN_JINRYO_DATE_KJH ( JJDKJH_DocNo, JJDKJH_KSDate, JJDKJH_KSType, JJDKJH_WayNo, JJDKJH_Way, JJDKJH_Part, JJDKJH_Rslt, JJDKJH_RsltDC, 
+		 								  CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID )
+		 values (#{KSDOCNO}, to_date(#{DTLDay}, 'yyyy-mm-dd'), #{KSTYPE}, #{WAYNO}, #{WAY}, #{PART}, #{RSLT}, #{RSLTDC},
+		 		'N', SYSDATE,'TREAT0406',#{USERID},SYSDATE,'TREAT0406',#{USERID}) 
+	</insert>
+	<insert id="insertK07Info" parameterType="hashmap">
+		 insert into JN_JINRYO_DATE_KPC ( JJDKPC_DocNo, JJDKPC_KSDate, JJDKPC_KSType, JJDKPC_item, JJDKPC_SiRyo, JJDKPC_Rslt, 
+		 								  CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID )
+		 values (#{KSDOCNO}, to_date(#{DTLDay}, 'yyyy-mm-dd'), #{KSTYPE}, #{ITEM}, #{SIRYO}, #{RSLT},
+		 		'N', SYSDATE,'TREAT0406',#{USERID},SYSDATE,'TREAT0406',#{USERID}) 
+	</insert>
+	<insert id="insertK08Info" parameterType="hashmap">
+		 insert into JN_JINRYO_DATE_KSB ( JJDKSB_DocNo, JJDKSB_KSDate, JJDKSB_KSType, JJDKSB_Item, JJDKSB_RsltDC, JJDKSB_Rslt, 
+		 								  CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID )
+		 values (#{KSDOCNO}, to_date(#{DTLDay}, 'yyyy-mm-dd'), #{KSTYPE}, #{ITEM}, #{RSLTDC}, #{RSLT},
+		 		'N', SYSDATE,'TREAT0406',#{USERID},SYSDATE,'TREAT0406',#{USERID}) 
+	</insert>
+	<insert id="insertK09Info" parameterType="hashmap">
+		 insert into JN_JINRYO_DATE_KXR ( JJDKXR_DocNo, JJDKXR_KSDate, JJDKXR_KSType, JJDKXR_Rslt, 
+		 								  CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID )
+		 values (#{KSDOCNO}, to_date(#{DTLDay}, 'yyyy-mm-dd'), #{KSTYPE}, #{RSLT},
+		 		'N', SYSDATE,'TREAT0406',#{USERID},SYSDATE,'TREAT0406',#{USERID}) 
+	</insert>
+	<insert id="insertK10Info" parameterType="hashmap">
+		 insert into JN_JINRYO_DATE_KEP ( JJDKEP_DocNo, JJDKEP_KSDate, JJDKEP_KSType, JJDKEP_Rslt, 
+		 								  CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID )
+		 values (#{KSDOCNO}, to_date(#{DTLDay}, 'yyyy-mm-dd'), #{KSTYPE}, #{RSLT},
+		 		'N', SYSDATE,'TREAT0406',#{USERID},SYSDATE,'TREAT0406',#{USERID}) 
+	</insert>
+	<insert id="insertKSInfo" parameterType="hashmap">
+		 insert into JN_JINRYO_DATE_KY ( JJDKY_DocNo, JJDKY_JRNo, JJDKY_KSDateYY, JJDKY_KSDate, JJDKY_KSType,
+		 								JJDKY_KSNo, JJDKY_KSSeqNo, JJDKY_KSSts, JJDKY_Cmnt, 
+		 								CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID)
+		 values (#{KSDOCNO}, #{JJJ_DOCNO}, to_date(#{DTLDay}, 'yyyy-mm-dd'), to_date('1900-01-01', 'yyyy-mm-dd'), '1', #{KSNO}, '1', '0', #{CMNT},
+		 		'N', SYSDATE,'TREAT0406',#{USERID},SYSDATE,'TREAT0406',#{USERID}) 
+	</insert>
+	<insert id="insertFileInfo" parameterType="hashmap">
+		INSERT INTO BZ_DATA_ATCH(BDA_DOCNO, BDA_BZCLS1, BDA_BZCLS2, BDA_BZCLS3, BDA_BZSEQNO, BDA_BZDATE, BDA_CNTNTTYPE, BDA_UPPATH, BDA_ATCHFILE, BDA_CMNT, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID)
+		VALUES(#{BDA_DOCNO}, #{BDA_BZCLS1}, #{BDA_BZCLS2}, #{BDA_BZCLS3}, #{BDA_BZSEQNO}, SYSTIMESTAMP, #{BDA_CNTNTTYPE}, #{BDA_UPPATH}, #{BDA_ATCHFILE}, #{BDA_CMNT}, 'N', SYSDATE, #{CMN_MAK_PROG}, #{CMN_MAK_ID}, SYSDATE, #{CMN_UPD_PROG}, #{CMN_UPD_ID})
+	</insert>
+	<update id="updateK01Info" parameterType="hashmap">
+		 update JN_JINRYO_DATE_KBL 
+		    set JJDKBL_Rslt    = #{RSLT}, 
+		    	JJDKBL_Cmnt    = #{CMNT}, 
+		    	CMN_DEL_STS='N', CMN_UPD_DATE=SYSDATE, CMN_UPD_PROG='TREAT0406', CMN_UPD_ID=#{USERID} 
+		  where JJDKBL_DocNo   = #{KSDOCNO}
+		    and JJDKBL_KSDate  = to_date(#{DTLDay}, 'yyyy-mm-dd') 
+		    and JJDKBL_Item    = #{ITEM}
+	</update>
+	<update id="updateKSInfo" parameterType="hashmap">
+		 update JN_JINRYO_DATE_KY 
+		    set JJDKY_Cmnt    = #{CMNT}, CMN_DEL_STS='N', CMN_UPD_DATE=SYSDATE, CMN_UPD_PROG='TREAT0406', CMN_UPD_ID=#{USERID} 
+		  where JJDKY_DocNo   = #{KSDOCNO}
+		    and JJDKY_KSType  = '1'
+		    and JJDKY_KSNo    = #{KSNO}
+		    and JJDKY_KSSeqNo = '1'
+	</update>
+	<update id="updateKSStatusInfo" parameterType="hashmap">
+		 update JN_JINRYO_DATE_KY 
+		    set JJDKY_KSDate  = to_date(#{KSDATE}, 'yyyy-mm-dd'), 
+		        JJDKY_KSSts = #{KSSTS},
+		        CMN_DEL_STS='N', CMN_UPD_DATE=SYSDATE, CMN_UPD_PROG='TREAT0406', CMN_UPD_ID=#{USERID} 
+		  where JJDKY_DocNo   = #{KSDOCNO}
+		    and JJDKY_KSType  = #{KSTYPE}
+		    and JJDKY_KSNo    = #{KSNO}
+		    and JJDKY_KSSeqNo = '1'
+	</update>
+	<delete id="deleteKSInfo" parameterType="hashmap">
+		delete from JN_JINRYO_DATE_KY  
+		 where JJDKY_DocNo   = #{KSDOCNO}
+		   and JJDKY_KSType  = '1'
+		   and JJDKY_KSNo    = #{KSNO}
+		   and JJDKY_KSSeqNo = '1'
+		   and not JJDKY_KSSts   = '2' 
+	</delete>
+	<delete id="deleteFileInfo" parameterType="hashmap">
+		delete from BZ_DATA_ATCH  
+		 where BDA_DocNo   = #{KSDOCNO}
+		   and BDA_BzCls1  = #{CLS1}
+			<if test="SEQNO != ''">
+			   and BDA_BzSeqNo = #{SEQNO}
+			</if>
+	</delete>
+	<delete id="deleteK01Info" parameterType="hashmap">
+		delete from JN_JINRYO_DATE_KBL  
+		 where JJDKBL_DocNo   = #{KSDOCNO}
+		   and to_char(JJDKBL_KSDate,'YYYY-MM-DD') = #{DTLDay}
+	</delete>
+	<delete id="deleteK02Info" parameterType="hashmap">
+		delete from JN_JINRYO_DATE_KSK  
+		 where JJDKSK_DocNo = #{KSDOCNO}
+		   and JJDKSK_KSDate = to_date(#{DTLDay}, 'yyyy-mm-dd')
+		   and JJDKSK_KSType = #{KSTYPE}
+	</delete>
+	<delete id="deleteK03Info" parameterType="hashmap">
+		delete from JN_JINRYO_DATE_KJK  
+		 where JJDKJK_DocNo = #{KSDOCNO}
+		   and JJDKJK_KSDate = to_date(#{DTLDay}, 'yyyy-mm-dd')
+		   and JJDKJK_KSType = #{KSTYPE}
+	</delete>
+	<delete id="deleteK04Info" parameterType="hashmap">
+		delete from JN_JINRYO_DATE_KHS  
+		 where JJDKHS_DocNo = #{KSDOCNO}
+		   and JJDKHS_KSDate = to_date(#{DTLDay}, 'yyyy-mm-dd')
+		   and JJDKHS_KSType = #{KSTYPE}
+	</delete>
+	<delete id="deleteK05Info" parameterType="hashmap">
+		delete from JN_JINRYO_DATE_KKS  
+		 where JJDKKS_DocNo = #{KSDOCNO}
+		   and JJDKKS_KSDate = to_date(#{DTLDay}, 'yyyy-mm-dd')
+		   and JJDKKS_KSType = #{KSTYPE}
+	</delete>
+	<delete id="deleteK06Info" parameterType="hashmap">
+		delete from JN_JINRYO_DATE_KJH  
+		 where JJDKJH_DocNo = #{KSDOCNO}
+		   and JJDKJH_KSDate = to_date(#{DTLDay}, 'yyyy-mm-dd')
+		   and JJDKJH_KSType = #{KSTYPE}
+	</delete>
+	<delete id="deleteK07Info" parameterType="hashmap">
+		delete from JN_JINRYO_DATE_KPC  
+		 where JJDKPC_DocNo = #{KSDOCNO}
+		   and JJDKPC_KSDate = to_date(#{DTLDay}, 'yyyy-mm-dd')
+		   and JJDKPC_KSType = #{KSTYPE}
+	</delete>
+	<delete id="deleteK08Info" parameterType="hashmap">
+		delete from JN_JINRYO_DATE_KSB  
+		 where JJDKSB_DocNo = #{KSDOCNO}
+		   and JJDKSB_KSDate = to_date(#{DTLDay}, 'yyyy-mm-dd')
+		   and JJDKSB_KSType = #{KSTYPE}
+	</delete>
+	<delete id="deleteK09Info" parameterType="hashmap">
+		delete from JN_JINRYO_DATE_KXR  
+		 where JJDKXR_DocNo = #{KSDOCNO}
+		   and JJDKXR_KSDate = to_date(#{DTLDay}, 'yyyy-mm-dd')
+		   and JJDKXR_KSType = #{KSTYPE}
+	</delete>
+	<delete id="deleteK10Info" parameterType="hashmap">
+		delete from JN_JINRYO_DATE_KEP  
+		 where JJDKEP_DocNo = #{KSDOCNO}
+		   and JJDKEP_KSDate = to_date(#{DTLDay}, 'yyyy-mm-dd')
+		   and JJDKEP_KSType = #{KSTYPE}
+	</delete>
+</mapper>

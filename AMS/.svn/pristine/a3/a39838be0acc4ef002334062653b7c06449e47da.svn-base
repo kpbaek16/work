@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Jour0303">
+
+	<select id="selectBurnReptList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	SELECT BBR_DocNo, TO_CHAR(BBR_BSDATE,'YYYY-MM-DD AM HH:MI') as BBR_BSDATE, BBR_AniCode, BBR_AniName, BBR_MaleCnt, BBR_FemaleCnt, MVI_VVRMNAME 
+	FROM BT_BITH_REPT, MF_VVRM_INFO
+	WHERE BBR_VvrmNo = MVI_VVRMNO
+	AND BT_BITH_REPT.CMN_DEL_STS = 'N'
+	
+	<if test="cal_1 != ''">
+	<![CDATA[
+	    AND TO_CHAR(BBR_BSDATE,'YYYY-MM-DD ') >= #{cal_1}
+	]]>
+	</if>
+	
+	<if test="cal_2 != ''">
+	<![CDATA[
+	  	AND TO_CHAR(BBR_BSDATE,'YYYY-MM-DD') <= #{cal_2}
+	]]>
+	</if>
+	
+	<if test="selbox != ''">
+		AND MVI_VVRMNO = #{selbox}
+	</if>
+	
+	<if test="schAname != ''">
+	AND BBR_AniName LIKE '%' || #{schAname} || '%'
+	</if>
+	<!-- ORDER BY B.BBR_DOCNO -->
+	</select>
+	
+	<select id="selectBurnList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT MAI_ANICODE, MAC_ANICLSCODE, MAC_NAME, MAC_ENAME,
+		MAC_SNAME, MVI_VVRMNAME,fn_getComCode_Cls3Name(200, 202, MAI_Sex) as MAI_GENDER,
+		FLOOR(MONTHS_BETWEEN(SYSDATE,TO_CHAR(MAI_Birthday,'YYYY-MM-DD'))/12) AS AGE,
+		FLOOR(MONTHS_BETWEEN( SYSDATE,
+		TO_CHAR(MAI_Birthday,'YYYY-MM-DD'))) - FLOOR(MONTHS_BETWEEN(SYSDATE,
+		TO_CHAR(MAI_Birthday,'YYYY-MM-DD')) / 12 ) * 12 as AGE2,
+		FN_GETCOMCODE_ClS3NAME('200','206',MAC_CITES) AS MAC_CITES,
+		FN_GETCOMCODE_ClS3NAME('200','205',MAC_CITES) AS MAC_RANK, MAC_NATMON
+		FROM MF_ANI_INFO, MF_ANI_CLS, MF_VVRM_INFO
+		WHERE MAI_ANICLSCODE = MAC_ANICLSCODE
+		AND MVI_VVRMNO = MAI_VVRMNO
+		AND MAI_ANICODE = #{MAI_ANICODE}
+		AND MF_ANI_INFO.CMN_DEL_STS='N'
+	</select>
+	
+</mapper>

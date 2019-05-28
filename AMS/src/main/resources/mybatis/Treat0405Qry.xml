@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Treat0405">
+
+	<select id="selectAnesList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	SELECT MDI_NAME, TO_CHAR(JAD_JRDATE,'YYYY-MM-DD') as JAD_JRDATE, JAD_DOCNO, JAD_ANICODE, JAD_TYPE, JAD_GOAL, JAD_JRDZZNAME, JAD_UNIT, MAC_NAME
+	from JN_ANTHES_DATE, MF_DRUG_INFO, MF_ANI_INFO A , MF_ANI_CLS C
+	WHERE JAD_DRUGCODE = MDI_DRUGCODE
+  	AND A.MAI_ANICODE = JAD_ANICODE
+  	AND A.MAI_ANICLSCODE = C.MAC_ANICLSCODE 
+	<if test="cal_1 != ''">
+	<![CDATA[
+	AND TO_CHAR(JAD_JRDATE,'YYYY-MM-DD') >= #{cal_1}
+	]]>
+	</if>
+		
+	<if test="cal_2 != ''">
+	<![CDATA[
+	AND TO_CHAR(JAD_JRDATE,'YYYY-MM-DD') <= #{cal_2}
+	]]>
+	</if>
+	
+	<if test="divKeyword != ''">
+	AND JAD_GOAL LIKE '%' || #{divKeyword} || '%'
+	</if>
+	
+	<if test="drugKeyword != ''">
+	AND MDI_NAME LIKE '%' || #{drugKeyword} || '%'
+	</if>
+	
+	<if test="nameKeyword != ''">
+	AND MAC_NAME LIKE '%' || #{nameKeyword} || '%'
+	</if>
+   	ORDER BY JAD_JRDATE DESC
+	</select>
+	
+</mapper>

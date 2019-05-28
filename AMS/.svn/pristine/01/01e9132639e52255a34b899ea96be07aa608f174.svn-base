@@ -1,0 +1,420 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CmDocMapper">
+
+	<!--  문서정보(tab01) -->
+	<select id="getSyDocInfo" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+        SELECT A.*
+            ,TO_CHAR(A.SDJ_JNLDATE,'YYYY-MM-DD') TXT_SDJ_JNLDATE
+            ,(SELECT MUI_NAME FROM   MF_USER_INFO
+              WHERE  MUI_ID = A.SDJ_SSUSERID) MUI_NAME
+            ,(SELECT MVI_VVRMNAME FROM MF_VVRM_INFO
+             WHERE MVI_VVRMNO = A.SDJ_VVRMNO) AS MVI_VVRMNAME
+            ,SDJ_WTHENO
+		FROM
+		(
+			SELECT S.SDJ_DOCNO, S.SDJ_JNLDATE, S.SDJ_VVRMNO, 
+			    S.SDJ_SSUSERID, S.SDJ_WTHENO, S.SDJ_TEMPL, 
+			    S.SDJ_TEMPH, S.SDJ_USERINFO, S.CMN_DEL_STS
+			FROM AMS.SY_DAILY_JNL S
+			WHERE SDJ_DOCNO = #{sdj_docno}
+		) A 
+	</select>
+
+	<select id="selectAniCount" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT MAI_AniCode, MAI_AniClsCode, MAC_Name, fn_getComCode_Cls3Name(200, 211, MAI_KnjpType) as MAI_KnjpType, MAI_Sex, SexName, MAI_CurSts, MAI_OSRegDate, DAIO_IOType, DAIO_Resn, DAIO_IODate, DAIO_BoYukSts, 
+	DAIO_RentEDate from (select MAI_AniCode, MAI_AniClsCode, MAC_Name, MAI_KnjpType, MAI_Sex, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as SexName, MAI_CurSts, MAI_OSRegDate, 
+	DT_ANI_IO.DAIO_IOType, DT_ANI_IO.DAIO_Resn, DT_ANI_IO.DAIO_IODate, DT_ANI_IO.DAIO_BoYukSts, DT_ANI_IO.DAIO_RentEDate 
+	FROM MF_ANI_CLS, MF_ANI_INFO, DT_ANI_IO, (select DAIO_AniCode, max(DAIO_IODate) as DAIO_IODate 
+	<![CDATA[
+	FROM DT_ANI_IO where TO_CHAR(DAIO_IODate,'YYYY-MM-DD') < #{sdj_jnldate}
+	]]> 
+	AND CMN_DEL_STS = 'N' 
+	GROUP BY DAIO_AniCode ) IO  
+	WHERE MAI_AniClsCode  = MAC_AniClsCode    
+	AND IO.DAIO_AniCode = MAI_AniCode    
+	AND IO.DAIO_AniCode = DT_ANI_IO.DAIO_AniCode    
+	AND IO.DAIO_IODate  = DT_ANI_IO.DAIO_IODate    
+	AND MAI_VvrmNo = #{mai_vvrmno} 
+	UNION SELECT MAI_AniCode, MAI_AniClsCode, MAC_Name, MAI_KnjpType, MAI_Sex, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as SexName, MAI_CurSts, MAI_OSRegDate, 
+	DT_ANI_IO.DAIO_IOType, DT_ANI_IO.DAIO_Resn, DT_ANI_IO.DAIO_IODate, DT_ANI_IO.DAIO_BoYukSts, DT_ANI_IO.DAIO_RentEDate
+	FROM MF_ANI_CLS, MF_ANI_INFO, DT_ANI_IO, ( select DAIO_AniCode, max(DAIO_IODate) as DAIO_IODate 
+	<![CDATA[
+	FROM DT_ANI_IO WHERE TO_CHAR(DAIO_IODate,'YYYY-MM-DD') < #{sdj_jnldate} 
+	]]> 
+	AND CMN_DEL_STS = 'N' 
+	GROUP BY DAIO_AniCode ) IO  
+	WHERE MAI_AniClsCode  = MAC_AniClsCode    
+	AND IO.DAIO_AniCode = MAI_AniCode    
+	AND IO.DAIO_AniCode = DT_ANI_IO.DAIO_AniCode    
+	AND IO.DAIO_IODate  = DT_ANI_IO.DAIO_IODate    
+	AND MAI_VvrmNo = #{mai_vvrmno}  ) 
+	ORDER BY MAC_Name, MAI_AniCode, DAIO_IODate
+	</select> 
+	
+	<!-- 동물현황 특이사항(tab01) -->
+	<select id="getSDJ01Cmnt" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT SDJ01_Cmnt 
+	FROM SY_DAILY_JNL01 
+	WHERE SDJ01_DocNo = #{sdj_docno}
+	</select>
+	
+	<!-- 지시사항(tab05) -->
+	<select id="getSDJ05Msg" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT SDJ05_CMNTETC, SDJ05_RSLTETC, SDJ05_ETCETC
+    FROM sy_daily_jnl05
+    WHERE SDJ05_DOCNO = #{sdj_docno}
+	</select>
+	
+	<!-- 임대현황(tab01) -->
+	<select id="getSyLoanInfo" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	 SELECT Rownum as rnum, DAIO_AniCode, fn_getComCode_Cls3Name(200, 250, DAIO_IOType) as DAIO_IOType, DAIO_Resn, TO_CHAR(DAIO_IODate,'YYYY-MM-DD') as DAIO_IODate,
+	 TO_CHAR(DAIO_RentEDate,'YYYY-MM-DD') as DAIO_RentEDate, DAIO_Place, DAIO_Cmnt, MAC_Name, MAI_BName    
+	 FROM DT_ANI_IO, MF_ANI_INFO, MF_ANI_CLS  
+	 WHERE DAIO_AniCode = MAI_AniCode    
+	 AND MAI_VvrmNo = #{mai_vvrmno}
+	<![CDATA[
+	 AND TO_CHAR(DAIO_IODate,'YYYY-MM-DD')  <= #{sdj_jnldate}
+	 ]]> 
+	 <![CDATA[
+	 AND TO_CHAR(DAIO_RentEDate,'YYYY-MM-DD') >= #{sdj_jnldate}
+	 ]]>
+	 AND ( (DAIO_IOType = '2' and DAIO_Resn = '8') or (DAIO_IOType = '1' and DAIO_Resn = '6') )   
+	 AND MAC_AniClsCode  = MAI_AniClsCode  
+	 ORDER BY rnum, DAIO_AniCode
+   </select>
+	
+	<select id="getSyVvrmList" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+        SELECT A.*
+		FROM
+		(
+	        SELECT 
+	            SVG_DOCNO, SVG_VVRMNO, CMN_DEL_STS, 
+	            CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, 
+	            CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID
+	        FROM SY_VVRM_GRP
+			WHERE SVG_DOCNO = #{svg_docno}
+		) A 
+	</select>
+	
+	<select id="getBkDocInfo" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+        SELECT A.*
+            ,TO_CHAR(A.JBJ_JNLDATE,'YYYY-MM-DD') TXT_JBJ_JNLDATE
+            ,(SELECT MUI_NAME FROM   MF_USER_INFO
+              WHERE  MUI_ID = A.JBJ_SSUSERID) MUI_NAME
+            ,(SELECT MDI_DPTNAME FROM MF_DPT_INFO DI, MF_TEAM_INFO TI
+              WHERE DI.MDI_LINKNO = TI.MTI_DPTNO
+              AND TI.MTI_TEAMNO = A.MUI_TEAMNO) AS MDI_DPTNAME
+            ,(SELECT MTI_DPTNO FROM MF_TEAM_INFO
+              WHERE MTI_TEAMNO = A.MUI_TEAMNO) AS MTI_DPTNO
+        FROM
+        (
+            SELECT 
+                J.JBJ_DOCNO, J.JBJ_JNLDATE, J.JBJ_SSUSERID, 
+                J.JBJ_CMNT, J.JBJ_KJSTS, J.CMN_DEL_STS,
+                (SELECT MUI_TEAMNO FROM MF_USER_INFO
+                 WHERE MUI_ID = J.JBJ_SSUSERID) AS MUI_TEAMNO
+            FROM AMS.JN_BOKN_JNL J
+            WHERE JBJ_DOCNO = #{jbj_docno}
+        ) A
+	</select>
+	
+	<select id="getBKJinCnt" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+       select JBJ_DocNo, TO_CHAR(JBJ_JNLDate,'YYYY-MM-DD') as JBJ_JNLDate, JBJ_SSUserID, 
+		fn_getUserName(JBJ_SSUserID) as UserName, 
+		fn_getAniCnt(JBJ_JNLDate, '0', 'N', 'C') as JRAniClsCnt, 
+		fn_getAniCnt(JBJ_JNLDate, '0', 'N', 'A') as JRAniCnt, 
+		fn_getAniCnt(JBJ_JNLDate, '0', 'D', 'C') as PSAniClsCnt , 
+		fn_getAniCnt(JBJ_JNLDate, '0', 'D', 'A') as PSAniCnt  ,
+		fn_getAniCnt(JBJ_JNLDate, '', 'K', '')   as KSTotCnt , JBJ_CMNT
+		from JN_BOKN_JNL
+		WHERE JBJ_DOCNO = #{JBJ_DOCNO}
+	</select>
+	
+	<select id="getImsangTest" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+    SELECT ROWNUM as RNUM, JJDKY_KSType, fn_getComCode_Cls3Name('500', '500', JJDKY_KSType) as KSTypeName , JJDKY_KSNo, fn_getComCode_Cls3Name('500', '501', JJDKY_KSNo) as KSNoName
+    , BAA_AniCode, MAI_AniClsCode, MAC_Name, TO_CHAR( JJDKY_KSDate ,'YYYY-MM-DD') as JJDKY_KSDate, 
+    fn_getComCode_Cls3Name(200, 202, MAI_Sex) as MAI_GENDER, MVI_VVRMNAME
+    FROM JN_JINRYO_DATE_KY, BZ_ANI_ATCH, MF_ANI_CLS, MF_ANI_INFO, JN_JINRYO_JNL, JN_BOKN_JNL, MF_VVRM_INFO
+    WHERE MAI_AniClsCode = MAC_AniClsCode 
+    AND MAI_AniCode    = BAA_AniCode 
+    AND JJJ_RCNo       = BAA_DocNo 
+    AND JJDKY_JRNo     = JJJ_DocNo 
+    AND MAI_VVRMNO = MVI_VVRMNO
+    AND JBJ_DOCNO =  #{JBJ_DOCNO}
+    ORDER BY RNUM
+	</select>
+	
+	<!-- 동물정보 상세[임시] -->
+	<select id="getAnimalInfo" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT 
+	FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '1') AS CLS1_NAME, 
+	FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '2') AS CLS2_NAME,
+  	FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '3') AS CLS3_NAME,
+	MAI_AniCode, MAI_AniClsCode, MAI_BName, MAI_Sex, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as SexName ,MAI_VvrmNo, MTI_TEAMNAME, MVI_VVRMNAME, MDI_DPTNAME,
+	fn_getVvrmName(MAI_VvrmNo) as VvrmName, MAC_Name, MAC_EName, MAC_NATMON,
+	MAC_Endang,FN_GETCOMCODE_ClS3NAME('200','205',MAC_RANK) AS MAC_RANK,MAC_OrgPlace,MAI_ChgAniCode,MAI_InsikNo,MAI_KnjpCnt,FN_GETCOMCODE_ClS3NAME('200','204',MAI_KnjpType) AS MAI_KnjpType,
+	MAI_NationalHTNo, MAC_GestPerid,FN_GETCOMCODE_ClS3NAME('200','201',MAI_CurSts) AS MAI_CurSts, MAC_SNAME,FN_GETCOMCODE_ClS3NAME('200','206',MAC_CITES) AS MAC_CITES, 
+	nvl(DAIO_IODate, to_date('1900-01-01', 'yyyy-mm-dd')), DAIO_Place,
+	FN_GETCOMCODE_ClS3NAME('100','102',MAI_EarType) AS MAI_EarType, FN_GETCOMCODE_ClS3NAME('100','102',MAI_ChipType) AS MAI_ChipType,
+	FN_GETCOMCODE_ClS3NAME('100','102',MAI_RingType) AS MAI_RingType, FN_GETDPTNAME(MAI_TEAMNO) as TEAMNAME,
+	FN_GETCOMCODE_ClS3NAME('200','200',MAI_REGTYPE) AS MAI_REGTYPE, MAI_CMNT
+	FROM MF_DPT_INFO,MF_TEAM_INFO, MF_VVRM_INFO,MF_ANI_CLS, MF_ANI_INFO  left join ( select DAIO_AniCode, DAIO_IOType, DAIO_IODate, DAIO_Place from DT_ANI_IO 
+	WHERE ROWNUM <![CDATA[<=1]]> order by DAIO_IODate DESC ) IOInf on DAIO_AniCode = MAI_AniCode
+	WHERE MAI_AniCode=#{MAI_AniCode}
+	AND MAI_AniClsCode = MAC_AniClsCode
+	AND MAI_VVRMNO = MVI_VVRMNO
+ 	AND MVI_TEAMNO = MTI_TEAMNO
+ 	AND MTI_DPTNO = MDI_LINKNO
+	</select>
+	
+	<!-- 동물정보[그룹정보] -->
+	<select id="getClsInfo" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT 
+	FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '1') AS CLS1_NAME, FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '2') AS CLS2_NAME,
+  	FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '3') AS CLS3_NAME, MAC_Name, MAC_EName, MAC_NATMON, MAC_Endang, MAC_ANICLSCODE,
+  	FN_GETCOMCODE_ClS3NAME('200','205',MAC_RANK) AS MAC_RANK, MAC_OrgPlace, MAC_GestPerid, MAC_SNAME,
+  	FN_GETCOMCODE_ClS3NAME('200','206',MAC_CITES) AS MAC_CITES, MAC_ESTM_TYPE, FN_GETCOMCODE_ClS3NAME('200','211',MAC_KJJ_TYPE) AS MAC_KJJ_TYPE, MAC_SY_MEANLF, MAC_WY_MEANLF, MAC_GEST_MON
+	FROM MF_ANI_CLS, MF_ANI_INFO
+	WHERE MAI_AniCode= #{MAI_AniCode}
+	AND MAI_AniClsCode = MAC_AniClsCode
+	AND MF_ANI_INFO.CMN_DEL_STS = 'N'
+	
+	</select>
+	
+	<!-- 동물정보[기본정보] -->
+	<select id="getBasicInfo" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT MAI_REGTYPE, MAI_BNAME, MAI_MLKNAME, MAI_CHGANICODE, MAI_CURSTS, MVI_VVRMNAME, MAI_LOC_HTNO, MAI_NATIONALHTNO, MAI_CHIP_INO, MAI_RING_INO, MAI_EAR_INO,
+	MAI_CMNT, MAI_CMNT, MVI_VVRMNAME, MAI_ANICODE
+	FROM MF_VVRM_INFO,MF_ANI_CLS, MF_ANI_INFO
+	WHERE MAI_AniCode= #{MAI_AniCode}
+	AND MAI_AniClsCode = MAC_AniClsCode
+	AND MAI_VVRMNO = MVI_VVRMNO
+	</select>
+	
+	<!-- 동물정보[출생정보] -->
+	<select id="getAniBorn" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+ 	SELECT MAI_BirthPlC, TO_CHAR(MAI_Birthday,'YYYY-MM-DD') as MAI_Birthday, TO_CHAR(MAI_OSRegDate,'YYYY-MM-DD') as MAI_OSRegDate, MAI_BirthVvrmNo, MAI_ANICODE,
+ 	MAI_Sex, MAI_FtAniNo, MAI_FtAniName, MAI_MmAniNo, MAI_MmAniName, MAI_HbrdType, MAI_NrtuType, MAI_BORNTYPE
+  	FROM MF_ANI_CLS, MF_ANI_INFO
+  	WHERE MAI_ANICLSCODE = MAC_ANICLSCODE
+  	AND MAI_ANICODE = #{MAI_AniCode}
+	</select>
+	
+	<!-- 동물정보[폐사정보] -->
+	<select id="getAniPyesa" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+ 	select PDR_DOCNO, PDR_DETHPROC, TO_CHAR(  PDR_PSDATE,'YYYY-MM-DD HH:MM') as  PDR_PSDATE, PDR_PSPLACE, PDR_BUKMREQ
+  	from PS_DETH_REPT,MF_ANI_CLS, MF_ANI_INFO
+  	WHERE MAI_AniClsCode = MAC_AniClsCode
+  	AND PDR_ANICODE = MAI_ANICODE
+  	AND MAI_AniCode= #{MAI_AniCode}
+	</select>
+	
+	<!-- 동물정보[임신정보] -->
+	<select id="getImsin" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+ 	select MAI_ImsinSts, TO_CHAR(MAI_ImsinDate,'YYYY-MM-DD') as MAI_ImsinDate, TO_CHAR(MAI_ResBnmnDate,'YYYY-MM-DD') as MAI_ResBnmnDate, MAI_BnmnCnt,
+ 	TO_CHAR(MAI_BNMNDATE,'YYYY-MM-DD') as MAI_BNMNDATE
+    from mf_ani_info I, MF_ANI_CLS C
+    WHERE MAI_AniClsCode = MAC_AniClsCode
+    AND MAI_AniCode=  #{MAI_AniCode}
+    AND C.CMN_DEL_STS = 'N'
+    AND I.CMN_DEL_STS = 'N'
+	</select>
+	
+	<!-- 동물정보[반입정보] -->
+	<select id="getAniBanip" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+ 	select Rownum as Rnum, FN_GETCOMCODE_ClS3NAME('200','250',DAIO_IOType) AS DAIO_IOType, TO_CHAR(DAIO_IODate,'YYYY-MM-DD') as DAIO_IODate, TO_CHAR(DAIO_RentEDate,'YYYY-MM-DD') as DAIO_RentEDate,
+ 	FN_GETCOMCODE_ClS3NAME('200','251',DAIO_RESN) AS DAIO_RESN, TO_CHAR(DAIO_BIRTHDAY,'YYYY-MM-DD') as DAIO_BIRTHDAY, DAIO_BIRTHPLC,DAIO_AGE, DAIO_PRICE,DAIO_NATION
+  	from DT_ANI_IO, MF_ANI_CLS, MF_ANI_INFO
+  	WHERE MAI_AniCode= #{MAI_AniCode}
+  	AND MAI_AniClsCode = MAC_AniClsCode
+  	AND DAIO_ANICODE = MAI_ANICODE
+	</select>
+	
+	<!-- 폐사보고서 상세 -->
+	<select id="getDethInfo" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT (select MUI_NAME FROM MF_USER_INFO WHERE MUI_ID= P.PDR_USERID) as MUI_NAME, PDR_DOCNO, fn_getDptName(I.MAI_TeamNo) as DptName, 
+   	TO_CHAR(P.PDR_PSDATE,'YYYY-MM-DD HH24:MI') as PDR_PSDATE, C.MAC_Name, fn_getVvrmName(I.MAI_VvrmNo) as VvrmName, fn_getComCode_Cls3Name(200, 202, I.MAI_Sex) as MAI_GENDER,
+    TO_CHAR(P.CMN_MAK_DATE,'YYYY-MM-DD') as CMN_MAK_DATE, P.PDR_PSPLACE, P.PDR_DETHPROC, P.PDR_CMNT, P.PDR_WAYSCH, P.PDR_BUKMREQ,
+    TRUNC(MONTHS_BETWEEN(SYSDATE, I.MAI_BIRTHDAY)/12,0) as ONE, TRUNC(MOD(MONTHS_BETWEEN(SYSDATE, I.MAI_BIRTHDAY)/12, 1)*12,0) as TWO, I.MAI_ANICODE,
+    FN_GETCOMCODE_ClS3NAME('200','206',MAC_CITES) AS MAC_CITES,  FN_GETCOMCODE_ClS3NAME('200','205',MAC_CITES) AS MAC_RANK, MAC_NATMON,
+    I.MAI_BNAME
+    FROM PS_DETH_REPT P, MF_USER_INFO U , MF_ANI_INFO I, MF_ANI_CLS C
+    WHERE PDR_DOCNO = #{PDR_DOCNO}
+    AND U.MUI_ID = P.PDR_USERID
+    AND I.MAI_AniCode  = P.PDR_AniCode 
+    AND I.MAI_AniClsCode = C.MAC_AniClsCode
+	</select>
+	
+	<!-- 번식보고서 상세 -->
+	<select id="getBurnInfo" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT B.BBR_DOCNO, V.MVI_VVRMNAME, fn_getDptName(U.MUI_TEAMNO) as DptName, U.MUI_NAME, TO_CHAR(B.BBR_BSDATE,'YYYY-MM-DD HH24:MI') as BBR_BSDATE,
+ 	B.BBR_ANINAME, TO_CHAR(B.CMN_MAK_DATE,'YYYY-MM-DD') as CMN_MAK_DATE, B.BBR_MALECNT, B.BBR_FEMALECNT, B.BBR_BIRTHSTS,
+ 	B.BBR_FTHANICODE, B.BBR_MTHANICODE, B.BBR_PLNCMNT, BBR_ANICODE
+    FROM MF_VVRM_INFO V, MF_USER_INFO U, BT_BITH_REPT B LEFT JOIN MF_ANI_INFO I on B.BBR_AniCode = I.MAI_ANICODE
+    WHERE B.BBR_DOCNO = #{BBR_DOCNO}
+    AND B.BBR_VvrmNo = V.MVI_VVRMNO
+    AND B.BBR_USERID = U.MUI_ID
+	</select>
+	
+	<!-- 진료일지 상세 -->
+	<select id="getJinryoInfo" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	 SELECT R.JJR_DOCNO, TO_CHAR(R.JJR_RCDATE,'YYYY-MM-DD') as JJR_RCDATE, U.MUI_NAME, T.MTI_TEAMNAME, 
+	fn_getComCode_Cls3Name('300', '303', J.JJJ_JRDZZTYPE) as JJJ_JRDZZTYPE, J.JJJ_JRDZZNAME, J.JJJ_JRCMNT,
+	fn_getComCode_Cls3Name('300', '302', J.JJJ_JRSts) as JJJ_JRStsName, J.JJJ_JRSTS, MAC_NAME,
+   	fn_getComCode_Cls3Name(200, 202, MAI_Sex) as MAI_GENDER, MAC_EName, MAI_ANICODE, MVI_VVRMNAME,
+   	TO_CHAR(MAI_Birthday,'YYYY-MM-DD') as MAI_Birthday, TO_CHAR(DAIO_IODATE,'YYYY-MM-DD') as DAIO_IODATE, DAIO_PLACE
+  	FROM JN_JINRYO_RC R, JN_JINRYO_JNL J, MF_USER_INFO U, MF_TEAM_INFO T, BZ_ANI_ATCH, MF_ANI_INFO, MF_ANI_CLS, MF_VVRM_INFO, DT_ANI_IO
+	WHERE J.JJJ_DOCNO =  #{JJJ_DOCNO}
+	AND J.JJJ_DOCNO = R.JJR_JRNO
+ 	AND BAA_DOCNO = JJR_DOCNO
+  	AND BAA_ANICODE = MAI_ANICODE
+  	AND MAC_ANICLSCODE = MAI_ANICLSCODE
+  	AND DAIO_ANICODE = MAI_ANICODE
+	AND R.JJR_USERID = U.MUI_ID
+  	AND MVI_VVRMNO = MAI_VVRMNO
+	AND U.MUI_TEAMNO = T.MTI_TEAMNO
+	</select>
+	
+	<!-- 진료내역 리스트 -->
+	<select id="getJinryoList" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT Rownum as Rnum, TO_CHAR(JJD_JRDATE,'YYYY-MM-DD') as JJD_JRDATE, MUI_NAME, fn_getComCode_Cls3Name('100', '100', MUI_JCCODE) as MUI_JCCODE, MTI_TEAMNAME
+  	FROM JN_JINRYO_DATE, JN_JINRYO_JNL, MF_USER_INFO, MF_TEAM_INFO
+  	WHERE JJJ_DOCNO =  #{JJJ_DOCNO}
+  	AND JJJ_DOCNO = JJD_DOCNO
+  	AND JJD_USERID = MUI_ID
+  	AND MTI_TEAMNO = MUI_TEAMNO
+	</select>
+	
+	<!-- 진료내역 상세 -->
+	<select id="getJlistInfo" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT Rownum as Rnum, TO_CHAR(JJD_JRDATE,'YYYY-MM-DD') as JJD_JRDATE, MUI_NAME, fn_getComCode_Cls3Name('100', '100', MUI_JCCODE) as MUI_JCCODE, MTI_TEAMNAME,
+	JJDCB_DRUGCODE, JJDCB_USEVOL, JJDCB_CMNT, MDI_NAME, MDI_TYPE, MDI_UNIT, MDI_PURPOSE, MDI_CMNT
+  	FROM JN_JINRYO_DATE, JN_JINRYO_JNL, MF_USER_INFO, MF_TEAM_INFO, JN_JINRYO_DATE_CB, MF_DRUG_INFO
+  	WHERE JJJ_DOCNO =   #{JJJ_DOCNO}
+    AND JJD_JRDATE = #{JJD_JRDATE}
+    AND MDI_DRUGCODE = JJDCB_DRUGCODE
+    AND JJDCB_JRNO = JJD_DOCNO
+  	AND JJJ_DOCNO = JJD_DOCNO
+  	AND JJD_USERID = MUI_ID
+  	AND MTI_TEAMNO = MUI_TEAMNO
+	</select>
+	
+	<!-- 진료요청 상세 -->
+	<select id="getReqInfo" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT JJR_DOCNO, TO_CHAR(JJR_RCDate,'YYYY-MM-DD') as JJR_RCDate, JJR_JRType, JJR_JRNo, BAA_AniCode, JJR_Cmnt, JJR_RCSts, MUI_NAME, MVI_VVRMNAME,
+	MAC_NAME, MTI_TEAMNAME, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as MAI_GENDER,
+	TRUNC(MONTHS_BETWEEN(SYSDATE, MAI_BIRTHDAY)/12,0) as ONE, TRUNC(MOD(MONTHS_BETWEEN(SYSDATE, MAI_BIRTHDAY)/12, 1)*12,0) as TWO
+  	FROM JN_JINRYO_RC, MF_ANI_CLS, MF_ANI_INFO, BZ_ANI_ATCH, MF_USER_INFO, MF_VVRM_INFO, MF_TEAM_INFO
+  	WHERE MAI_AniClsCode = MAC_AniClsCode
+  	AND MAI_AniCode    = BAA_AniCode
+  	AND JJR_DocNo      = BAA_DocNo
+  	AND MTI_TEAMNO = MUI_TEAMNO
+  	AND JJR_USERID = MUI_ID
+  	AND MVI_VVRMNO = MAI_VVRMNO
+  	AND JJR_DOCNO = #{JJR_DOCNO}
+	</select>
+	
+	<!--  부검결과서 문서정보 -->
+	<select id="getBukumDoc" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	select PBR_DOCNO, MUI_NAME, MTI_TEAMNAME,  TO_CHAR(PBR_BuDate,'YYYY-MM-DD') as PBR_BuDate
+	from PS_BUKM_REPT, MF_USER_INFO, MF_TEAM_INFO
+	WHERE PBR_DOCNO = #{PBR_DOCNO}
+	AND PBR_USERID = MUI_ID
+	AND MUI_TEAMNO = MTI_TEAMNO
+	</select>
+	
+	<!--  부검결과서 기본정보 -->
+	<select id="getBukumBasic" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT TO_CHAR(PBR_BuDate,'YYYY-MM-DD') as PBR_BuDate, PBR_REQDOCNO, MAC_NAME, MAI_ANICODE, MVI_VVRMNAME, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as MAI_GENDER,
+	PBR_Weight, TRUNC(MONTHS_BETWEEN(SYSDATE, MAI_BIRTHDAY)/12,0) as ONE, TRUNC(MOD(MONTHS_BETWEEN(SYSDATE, MAI_BIRTHDAY)/12, 1)*12,0) as TWO
+	from PS_BUKM_REPT, PS_DETH_REPT, MF_ANI_INFO, MF_ANI_CLS, MF_VVRM_INFO
+	WHERE PBR_REQDOCNO = PDR_DOCNO
+	AND MAC_AniClsCode  = MAI_AniClsCode
+	AND PDR_ANICODE = MAI_ANICODE
+	AND MVI_VVRMNO = MAI_VVRMNO
+	AND PBR_DOCNO = #{PBR_DOCNO}
+	</select>
+	
+	<!--  부검결과서 부검결과 -->
+	<select id="getBukumRpt" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT PBR_BUDzzName, fn_getComCode_Cls3Name(200, 203, PBR_DethBdyPrc) as PBR_DethBdyPrc, PBR_PCSts, PBR_Cmnt, PBR_KSReslt,
+	PBR_PS_Dir, PBR_PS_Pre, PBR_PS_Etc,fn_getComCode_Cls3Name(300, 304, PBR_DzzType) as PBR_DzzType
+	FROM PS_BUKM_REPT
+	WHERE PBR_DOCNO = #{PBR_DOCNO}
+	</select>
+	
+	<select id="getInspctMgr" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT JJDKY_KSSTS,JJJ_DOCNO, JJJ_JRDZZNAME, JJJ_JRCMNT, MAC_NAME, MAC_ENAME, MAI_ANICODE, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as MAI_GENDER, TO_CHAR(JJDKY_KSDATEYY,'YYYY-MM-DD') as JJDKY_KSDATEYY,
+	fn_getVvrmName(MAI_VvrmNo) as VvrmName, DAIO_Place , TO_CHAR(MAI_BIRTHDAY,'YYYY-MM-DD') as MAI_BIRTHDAY, fn_getComCode_Cls3Name(500, 500, JJDKY_KSType) as JJDKY_KSType,
+	FLOOR(MONTHS_BETWEEN(SYSDATE,TO_CHAR(MAI_Birthday,'YYYY-MM-DD'))/12)AS AGE,
+	FLOOR(MONTHS_BETWEEN( SYSDATE, TO_CHAR(MAI_Birthday,'YYYY-MM-DD'))) - FLOOR(MONTHS_BETWEEN( SYSDATE, TO_CHAR(MAI_Birthday,'YYYY-MM-DD')) / 12 ) * 12 as AGE2 
+	FROM JN_JINRYO_DATE_KY, JN_JINRYO_JNL,BZ_ANI_ATCH, MF_ANI_CLS, MF_ANI_INFO left join ( select DAIO_AniCode, DAIO_IOType, DAIO_IODate, DAIO_Place from DT_ANI_IO 
+	WHERE DAIO_IOType = '1'  <![CDATA[ and rownum <=1 ]]> order by DAIO_IODate desc ) IOInf  on DAIO_AniCode = MAI_AniCode 
+	WHERE JJJ_DOCNO = JJDKY_JRNO
+	AND JJJ_RCNO = BAA_DOCNO
+	AND MAI_AniClsCode = MAC_AniClsCode 
+	AND MAI_AniCode = BAA_AniCode
+	AND JJJ_DOCNO = #{JJJ_DOCNO}
+	</select>
+	
+	<select id="getAnimalInfo2" resultType="java.util.LinkedHashMap" parameterType="java.util.LinkedHashMap">
+	SELECT  
+            FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '1') || '(' || MAC_ANICODE1 || ')' AS CLS1_NAME,
+            FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '2') || '(' || MAC_ANICODE2 || ')' AS CLS2_NAME,
+            FN_GETANICLSNAME (MAC_ANICLSCODE || '-' || MAC_ANICODE4_SEQ, '3') || '(' || MAC_ANICODE3 || ')' AS CLS3_NAME,
+            A.*
+		FROM
+		(
+			SELECT 
+			MAC_ANICLSCODE, MAC_ANICODE1, MAC_ANICODE2, 
+		    MAC_ANICODE3, MAC_ANICODE4_SEQ, MAC_NAME, 
+		    MAC_ENAME, MAC_SNAME, FN_GETCOMCODE_ClS3NAME('200','206',MAC_CITES) AS MAC_CITES, 
+		    FN_GETCOMCODE_ClS3NAME('200','207',MAC_ENDANG) AS MAC_ENDANG , MAC_NATMON, 
+		    FN_GETCOMCODE_ClS3NAME('200','207',MAC_RANK) AS MAC_RANK,
+		    MAC_ORGPLACE, MAC_BRDPERID, MAC_GESTPERID, 
+		    CMN_DEL_STS
+			FROM MF_ANI_CLS
+			WHERE MAC_ANICLSCODE = #{mac_aniclscode}
+		)  A
+	</select>
+	
+	<select id="showAnimal" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+	SELECT rownum as RNUM, MAI_ANICODE, MAC_NAME, MAI_BNAME, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as MAI_GENDER, MVI_VVRMNAME,
+	FN_GETCOMCODE_ClS3NAME('200','201',MAI_CurSts) AS MAI_CurSts
+	FROM MF_ANI_MGR, MF_ANI_INFO, MF_ANI_CLS, MF_VVRM_INFO, MF_DPT_INFO, MF_TEAM_INFO  
+	WHERE MAM_UserID =  #{ss_id}	
+	AND MAM_AniCode = MAI_AniCode
+	AND MAI_TeamNo  = MTI_TeamNo
+	AND MDI_LinkNo  = MTI_DptNo
+	AND MAC_AniClsCode = MAI_AniClsCode
+	AND MAI_VvrmNo = MVI_VvrmNo
+	<!-- AND MF_ANI_INFO.CMN_DEL_STS='N' -->
+	<!-- ORDER BY MTI_TEAMNAME, RNUM -->
+	</select>
+	
+	<select id="getCheckAnimal" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+	SELECT * 
+	FROM MF_ANI_INFO, MF_ANI_CLS 
+	WHERE MAC_ANICLSCODE = MAI_ANICLSCODE 
+	AND MAI_ANICODE = #{MAI_ANICODE}
+	</select>
+	
+	<!-- 사육일지 레이어 동물검색 -->
+	<select id="selectLayersch" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+	SELECT MAC_NAME, MAI_ANICODE, fn_getComCode_Cls3Name(200, 202, MAI_Sex) as MAI_GENDER, MAI_BNAME
+    FROM MF_ANI_INFO, MF_ANI_CLS
+    WHERE MAI_ANICLSCODE = MAC_ANICLSCODE  
+    AND MF_ANI_INFO.CMN_DEL_STS='N'
+      <choose>
+		<when test="ch_schType =='aniName' and ch_s_keyword != ''">
+		 AND MAC_Name like '%' || #{ch_s_keyword} || '%'
+		</when>
+		
+		<when test="ch_schType =='aniNumber' and ch_s_keyword != ''">
+		 AND MAI_AniCode like '%' || #{ch_s_keyword} || '%'
+		</when>
+		</choose>
+	</select>
+	
+</mapper>

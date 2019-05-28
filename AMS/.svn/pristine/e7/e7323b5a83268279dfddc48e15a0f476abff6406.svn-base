@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Prevent0501">
+
+	<select id="selectBukumlist" parameterType="hashmap" resultType="hashmap">
+	SELECT PBR_DOCNO, PBR_REQDOCNO, TO_CHAR(PBR_BUDATE,'YYYY-MM-DD') as PBR_BUDATE,TO_CHAR(PDR_PSDate,'YYYY-MM-DD') as PDR_PSDate , MAC_NAME, PBR_USERID, PBR_WEIGHT, 
+   	PBR_BUDZZNAME, MAI_ANICODE,fn_getComCode_Cls3Name(200, 202, MAI_Sex) as MAI_GENDER,MVI_VVRMNAME,
+	fn_getComCode_Cls3Name(200, 203, PBR_DETHBDYPRC) as PBR_DETHBDYPRC, PBR_PCSTS, PBR_CMNT, PBR_KSRESLT, PBR_PS_DIR, PBR_PS_PRE, PBR_PS_ETC, 
+	fn_getComCode_Cls3Name(300, 304, PBR_DZZTYPE) as PBR_DZZTYPE, PBR_KSReqSts
+	FROM MF_ANI_INFO, MF_ANI_CLS, MF_VVRM_INFO, PS_DETH_REPT left join PS_BUKM_REPT on PDR_DocNo = PBR_ReqDocNo  
+	WHERE PBR_REQDOCNO = PDR_DocNo
+	AND MAI_ANICODE = PDR_ANICODE
+	AND MAC_ANICLSCODE = MAI_ANICLSCODE
+	AND MAI_VVRMNO = MVI_VVRMNO
+	
+	 <choose>
+		<when test="schType == 'all'">
+		AND PBR_KSReqSts != 0
+		</when>
+		<when test="schType == 'request'">
+		AND PBR_KSReqSts = 1
+		</when>
+		<when test="schType == 'testing'">
+		AND PBR_KSReqSts = 2
+		</when>
+		<when test="schType == 'finish'">
+		AND PBR_KSReqSts = 3
+		</when>
+	
+	</choose>
+	
+	<if test="cal_1 != ''">
+		<![CDATA[
+	    AND TO_CHAR(PDR_PSDate,'YYYY-MM-DD') >= #{cal_1}
+		]]>
+		</if>
+		
+		<if test="cal_2 != ''">
+		<![CDATA[
+	    AND TO_CHAR(PDR_PSDate,'YYYY-MM-DD') <= #{cal_2}
+		]]>
+		</if>
+	
+		<if test="vvrmKeyword != ''">
+		AND MVI_VVRMNAME LIKE '%' || #{vvrmKeyword} || '%'
+		</if>
+	
+		<if test="nameKeyword != ''">
+		AND MAC_Name LIKE '%' || #{nameKeyword} || '%'
+		</if>
+		ORDER BY PDR_PSDate
+
+	</select>
+	
+	<select id="selectKSSTS" parameterType="hashmap" resultType="hashmap">
+	select 
+
+	</select>
+	
+	
+</mapper>

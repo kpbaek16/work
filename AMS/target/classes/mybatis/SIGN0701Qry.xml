@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SIGN0701">
+	<select id="selectSignList" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+		SELECT rownum as SEQ, e.* FROM (
+		SELECT BSL_DOCNO, BSL_KJNO, BSL_KIND, BSL_DOCCMNT, BSL_RSLTSTS,
+		 	   BSL_DOCTYPE, FN_GETCOMCODE_CLS3NAME ('100', '114', BSL_DOCTYPE) as BSL_DOCTYPE_NAME,
+			   BSL_PROCSTS, FN_GETCOMCODE_CLS3NAME ('100', '117', BSL_PROCSTS) as BSL_PROCSTS_NAME,
+			   BSL_USER_ID, BSL_TEAM_NO, BSL_TEAM_NAME, BSL_DPT_NO, BSL_DPT_NAME,
+			   DECODE(BSL_PROCSTS,1,(select MUI_Name from MF_USER_INFO where BSL_USER_ID = MUI_ID),BSL_USER_NAME) AS BSL_USER_NAME, 
+			   to_char(A.CMN_MAK_DATE,'YYYY-MM-DD') AS CMN_MAK_DATE
+		FROM BZ_SIGN_LIST A
+		WHERE A.CMN_DEL_STS = 'N'
+		  AND BSL_KIND = 'Y'
+		<if test="selectDocKind != '' and selectDocKind != 0">
+			AND BSL_DOCTYPE = #{selectDocKind}
+		</if>
+		<choose>
+			<when test="selectKind == 1">
+				AND BSL_USER_ID = #{USERID}
+				<if test="selectStatus != '' and selectStatus != 0">
+					AND BSL_PROCSTS = #{selectStatus}
+				</if>
+			</when>
+			<when test="selectKind == 2">
+				AND EXISTS(SELECT * FROM BZ_SIGN_USER B 
+							WHERE A.BSL_DOCNO = B.BSU_DOCNO 
+							  AND A.BSL_DOCTYPE = B.BSU_DOCTYPE 
+							  AND A.BSL_KJNO = B.BSU_KJNO 
+							  AND BSU_KJ_USERID = #{USERID} 
+							  AND BSU_RCVTYPE = 'RCV'
+							<if test="selectStatus == 0">
+								AND (NOT BSU_KJSTS = 'X' OR BSU_KJPRCSTS = 'Y')
+							</if>
+							<if test="selectStatus == 2">
+								AND BSU_KJPRCSTS = 'Y'
+							</if>
+							<if test="selectStatus == 3">
+								AND BSU_KJPRCSTS = 'E'
+							</if>
+							<if test="selectStatus == 5">
+								AND (BSU_KJPRCSTS = 'E' OR BSU_KJSTS = 'N')
+							</if>
+							  )
+				<if test="selectStatus == 2">
+					AND BSL_RSLTSTS = ' '
+				</if>
+				<if test="selectStatus == 3">
+					AND BSL_PROCSTS = #{selectStatus}
+				</if>
+				<if test="selectStatus == 4">
+				AND BSL_RSLTSTS = 'Y'
+				</if>
+				<if test="selectStatus == 5">
+				AND BSL_RSLTSTS = 'N'
+				</if>
+			</when>
+			<otherwise>
+				AND EXISTS(SELECT * FROM BZ_SIGN_USER B 
+							WHERE A.BSL_DOCNO = B.BSU_DOCNO 
+							  AND A.BSL_DOCTYPE = B.BSU_DOCTYPE 
+							  AND A.BSL_KJNO = B.BSU_KJNO 
+							  AND BSU_KJ_USERID = #{USERID} 
+							  AND BSU_RCVTYPE = 'NOTI'
+							<if test="selectStatus == 6">
+							  AND BSU_CNFMSTS = 'N'
+							</if>
+							<if test="selectStatus == 7">
+							  AND BSU_CNFMSTS = 'Y'
+							</if>
+							  )
+			</otherwise>
+		</choose>
+		<if test="firstDate != null and firstDate != '' and secondDate != null and secondDate != ''">
+			AND A.CMN_MAK_DATE BETWEEN #{firstDate} AND #{secondDate} || ' 23:59:59'
+		</if>
+		<if test="firstDate != null and firstDate != '' and (secondDate == null or secondDate == '')">
+			AND #{firstDate} <![CDATA[<]]> A.CMN_MAK_DATE
+		</if>
+		<if test="(firstDate == null or firstDate == '') and secondDate != null and secondDate != ''">
+			AND #{secondDate} || ' 23:59:59' <![CDATA[>]]> A.CMN_MAK_DATE
+		</if>
+		order by A.CMN_MAK_DATE desc
+		) e
+	</select>
+	<select id="selectCONNSignList" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+		SELECT rownum as SEQ, e.* FROM (
+		SELECT BSL_DOCNO, BSL_KJNO, BSL_KIND, BSL_DOCCMNT, BSL_RSLTSTS,
+		 	   BSL_DOCTYPE, FN_GETCOMCODE_CLS3NAME ('100', '115', BSL_DOCTYPE) as BSL_DOCTYPE_NAME,
+			   BSL_PROCSTS, FN_GETCOMCODE_CLS3NAME ('100', '116', BSL_PROCSTS) as BSL_PROCSTS_NAME,
+			   BSL_USER_ID, BSL_TEAM_NO, BSL_TEAM_NAME, BSL_DPT_NO, BSL_DPT_NAME,
+			   DECODE(BSL_PROCSTS,1,(select MUI_Name from MF_USER_INFO where BSL_USER_ID = MUI_ID),BSL_USER_NAME) AS BSL_USER_NAME, 
+			   to_char(A.CMN_MAK_DATE,'YYYY-MM-DD') AS CMN_MAK_DATE
+		FROM BZ_SIGN_LIST A
+		WHERE A.CMN_DEL_STS = 'N'
+		  AND BSL_KIND = 'N'
+		  AND BSL_USER_ID = #{USERID}
+		<if test="selectDocKind != '' and selectDocKind != 0">
+			AND BSL_DOCTYPE = #{selectDocKind}
+		</if>
+		<if test="selectStatus != '' and selectStatus != 0">
+			AND BSL_PROCSTS = #{selectStatus}
+		</if>
+		<if test="firstDate != null and firstDate != '' and secondDate != null and secondDate != ''">
+			AND A.CMN_MAK_DATE BETWEEN #{firstDate} AND #{secondDate} || ' 23:59:59'
+		</if>
+		<if test="firstDate != null and firstDate != '' and (secondDate == null or secondDate == '')">
+			AND #{firstDate} <![CDATA[<]]> A.CMN_MAK_DATE
+		</if>
+		<if test="(firstDate == null or firstDate == '') and secondDate != null and secondDate != ''">
+			AND #{secondDate} || ' 23:59:59' <![CDATA[>]]> A.CMN_MAK_DATE
+		</if>
+		order by A.CMN_MAK_DATE desc
+		) e
+	</select>
+	<resultMap id="getSIGNInfoResult" type="java.util.LinkedHashMap">
+		<result property="BSL_DOCNO" column="BSL_DOCNO"/>
+		<result property="BSL_KJNO" column="BSL_KJNO"/>
+		<result property="BSL_KIND" column="BSL_KIND"/>
+		<result property="BSL_DOCCMNT" column="BSL_DOCCMNT"/>
+		<result property="BSL_RSLTSTS" column="BSL_RSLTSTS"/>
+		<result property="BSL_DOCTYPE" column="BSL_DOCTYPE"/>
+	    <result property="BSL_PROCSTS" column="BSL_PROCSTS"/>
+	    <result property="BSL_DOCTYPE_NAME" column="BSL_DOCTYPE_NAME"/>
+	    <result property="BSL_PROCSTS_NAME" column="BSL_PROCSTS_NAME"/>
+	    <result property="BSL_USER_ID" column="BSL_USER_ID"/>
+	    <result property="BSL_USER_NAME" column="BSL_USER_NAME"/>
+	    <result property="BSL_TEAM_NO" column="BSL_TEAM_NO"/>
+	    <result property="BSL_TEAM_NAME" column="BSL_TEAM_NAME"/>
+	    <result property="BSL_DPT_NO" column="BSL_DPT_NO"/>
+	    <result property="BSL_DPT_NAME" column="BSL_DPT_NAME"/>
+	    <result property="CMN_UPD_DATE" column="CMN_UPD_DATE"/>
+		<result property="BSL_CMNT" column="BSL_CMNT" jdbcType="CLOB" javaType="java.lang.String"/>
+	</resultMap>
+	<select id="getSIGNInfo" parameterType="hashmap" resultMap="getSIGNInfoResult">
+		SELECT BSL_DOCNO, BSL_KJNO, BSL_KIND, BSL_DOCCMNT,  BSL_RSLTSTS,
+			   BSL_DOCTYPE, BSL_PROCSTS, 
+			   <choose>
+			   		<when test='KIND == "Y"'>
+			   			FN_GETCOMCODE_CLS3NAME ('100', '114', BSL_DOCTYPE) as BSL_DOCTYPE_NAME,
+			   			FN_GETCOMCODE_CLS3NAME ('100', '117', BSL_PROCSTS) as BSL_PROCSTS_NAME,
+			   		</when>
+			   		<otherwise>
+			   			FN_GETCOMCODE_CLS3NAME ('100', '115', BSL_DOCTYPE) as BSL_DOCTYPE_NAME,
+			   			FN_GETCOMCODE_CLS3NAME ('100', '116', BSL_PROCSTS) as BSL_PROCSTS_NAME,
+			   		</otherwise>
+			   </choose>
+			   BSL_USER_ID, BSL_USER_NAME, BSL_TEAM_NO, BSL_TEAM_NAME, BSL_DPT_NO, BSL_DPT_NAME,
+			   TO_CHAR(CMN_UPD_DATE, 'yyyy-mm-dd hh24:mi:ss') AS CMN_UPD_DATE,
+			   TO_CHAR(CMN_MAK_DATE, 'yyyy-mm-dd hh24:mi:ss') AS CMN_MAK_DATE,
+			   BSL_JCCODE_NAME, BSL_CMNT
+	 	  FROM BZ_SIGN_LIST 
+	 	 WHERE BSL_DOCNO = #{DOCNO}
+	 	   AND BSL_DOCTYPE = #{SignType}
+	 	   <choose>
+				<when test='KJNO != ""'>
+					AND BSL_KJNO = #{KJNO}
+				</when>
+				<otherwise>
+					<if test='KIND == "Y"'>
+		   			AND NOT BSL_PROCSTS = '5'
+		 			</if>
+		 			<if test='KIND == "N"'>
+		   			AND NOT BSL_PROCSTS = '7'
+		 			</if>
+				</otherwise>
+	 	   </choose>	 	   
+	 	   AND BSL_KIND = #{KIND}
+	</select>
+	<select id="selectSIGN_USERList" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+		SELECT rownum as SEQ, e.* FROM (
+		<choose>
+			<when test="PROCSTS == 1">
+				SELECT BSU_DOCNO, BSU_DOCTYPE, BSU_KJNO, BSU_KJ_USERID, MUI_NAME AS BSU_KJ_USERNAME, MTI_TEAMNO AS BSU_TEAM_NO,
+					   MTI_TEAMNAME AS BSU_TEAM_NAME, MDI_LINKNO AS BSU_DPT_NO, MDI_DPTNAME AS BSU_DPT_NAME, BSU_ORDER,
+					   BSU_RCVTYPE, BSU_CNFMSTS, TO_CHAR(BSU_CNFMDATE, 'yyyy-mm-dd hh24:mi:ss') AS BSU_CNFMDATE, BSU_KJPRCSTS, 
+					   BSU_KJSTS, TO_CHAR(BSU_KJDATE, 'yyyy-mm-dd hh24:mi:ss') AS BSU_KJDATE, 
+					   FN_GETCOMCODE_CLS3NAME ('100', '100', MUI_JCCODE) as BSU_JC_NAME
+	 	  		  FROM BZ_SIGN_USER LEFT OUTER JOIN MF_USER_INFO ON BSU_KJ_USERID = MUI_ID
+	 	  		       LEFT OUTER JOIN MF_TEAM_INFO ON MUI_TEAMNO = MTI_TEAMNO
+		  	   		   LEFT OUTER JOIN MF_DPT_INFO ON MTI_DPTNO = MDI_LINKNO
+	 	 		 WHERE BSU_DOCNO = #{DOCNO}
+	 	   		   AND BSU_DOCTYPE = #{SignType}
+	 	    	   AND BSU_KJNO = #{KJNO}
+			</when>
+			<otherwise>
+				SELECT BSU_DOCNO, BSU_DOCTYPE, BSU_KJNO, BSU_KJ_USERID, BSU_KJ_USERNAME, BSU_TEAM_NO,
+					   BSU_TEAM_NAME, BSU_DPT_NO, BSU_DPT_NAME, BSU_ORDER,
+					   BSU_RCVTYPE, BSU_CNFMSTS, TO_CHAR(BSU_CNFMDATE, 'yyyy-mm-dd hh24:mi:ss') AS BSU_CNFMDATE, BSU_KJPRCSTS, 
+					   BSU_KJSTS, TO_CHAR(BSU_KJDATE, 'yyyy-mm-dd hh24:mi:ss') AS BSU_KJDATE, BSU_JC_NAME
+	 	  		  FROM BZ_SIGN_USER
+	 	 		 WHERE BSU_DOCNO = #{DOCNO}
+	 	   		   AND BSU_DOCTYPE = #{SignType}
+	 	    	   AND BSU_KJNO = #{KJNO}
+			</otherwise>
+		</choose>
+		order by BSU_RCVTYPE desc, BSU_ORDER desc
+		) e
+	</select>
+	<select id="getSignUserInfo" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+		SELECT a.*,
+			  (SELECT count(*)
+			     FROM BZ_SIGN_USER b 
+			    WHERE a.BSU_DOCNO = b.BSU_DOCNO 
+			      AND a.BSU_DOCTYPE = b.BSU_DOCTYPE 
+			      AND a.BSU_KJNO = b.BSU_KJNO 
+			      AND b.BSU_ORDER > a.BSU_ORDER
+            	  AND b.BSU_RCVTYPE = 'RCV') as LastChk
+		  FROM BZ_SIGN_USER a
+		 WHERE BSU_DOCNO = #{DOCNO}
+	 	   AND BSU_DOCTYPE = #{SignType}
+	 	   AND BSU_KJNO = #{KJNO}
+	 	   AND BSU_KJPRCSTS = 'Y'
+	</select>
+	<select id="getNextSignUserInfo" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+		SELECT rownum, a.* FROM(
+		SELECT *
+		  FROM BZ_SIGN_USER
+		 WHERE BSU_DOCNO = #{DOCNO}
+	 	   AND BSU_DOCTYPE = #{SignType}
+	 	   AND BSU_KJNO = #{KJNO}
+	 	   AND BSU_ORDER > #{ORDER}
+	 	   AND BSU_RCVTYPE = 'RCV'
+	 	 ORDER BY BSU_ORDER
+	 	   ) a
+	 	WHERE rownum = '1'
+	</select>
+	<select id="getUSERInfo" parameterType="String" resultType="java.util.LinkedHashMap">
+		SELECT MUI_ID, MUI_NAME, MTI_TEAMNO, MTI_TEAMNAME, MDI_LINKNO, MDI_DPTNAME,
+			   FN_GETCOMCODE_CLS3NAME ('100', '100', MUI_JCCODE) as MUI_JCCODE_NAME
+		  FROM MF_USER_INFO
+		  	   LEFT OUTER JOIN MF_TEAM_INFO ON MUI_TEAMNO = MTI_TEAMNO
+		  	   LEFT OUTER JOIN MF_DPT_INFO ON MTI_DPTNO = MDI_LINKNO
+		 WHERE MUI_ID = #{value} 
+	</select>
+	<select id="getSIGNCNT_Info" parameterType="java.util.LinkedHashMap" resultType="String">
+		SELECT count(*)
+		  FROM BZ_SIGN_LIST
+		 WHERE BSL_DOCNO = #{DOCNO} 
+		   AND BSL_DOCTYPE = #{DOCTYPE}
+		   AND BSL_KIND = #{KIND}
+		 <if test='KIND == "Y"'>
+		   AND NOT BSL_PROCSTS = '5'
+		 </if>
+		 <if test='KIND == "N"'>
+		   AND NOT BSL_PROCSTS = '7'
+		 </if>
+	</select>
+	<select id="selectUSER_KJPList" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+	SELECT rownum as SEQ, e.* FROM (
+		SELECT MUK_USERID, MUK_KJSEQ,
+			   DECODE(MUK_RCVTYPE,'RCV','수신','참조') AS MUK_RCVTYPE_NAME, MUK_RCVTYPE, 
+			   MUK_KJID, MUI_NAME, MTI_TEAMNAME, MDI_DPTNAME,
+			   FN_GETCOMCODE_CLS3NAME ('100', '100', MUI_JCCODE) as MUI_JCCODE_NAME
+		  FROM MF_USER_KJP 
+		  	   LEFT OUTER JOIN MF_USER_INFO ON MUI_ID = MUK_KJID AND MF_USER_INFO.CMN_DEL_STS = 'N'
+		  	   LEFT OUTER JOIN MF_TEAM_INFO ON MUI_TEAMNO = MTI_TEAMNO
+		  	   LEFT OUTER JOIN MF_DPT_INFO ON MTI_DPTNO = MDI_LINKNO
+		 WHERE MUK_USERID = #{USERID} 
+		 <if test="RCVTYPE != ''">
+		   AND MUK_RCVTYPE = #{RCVTYPE}
+		</if>
+	  ORDER BY MUK_RCVTYPE DESC, MUK_KJSEQ
+	  ) e
+	</select>
+	<select id="selectTEMPList" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+	SELECT rownum as SEQ, e.* FROM (
+		SELECT *
+		  FROM TMP_INPSAVE
+		 WHERE T_UID = #{USERID} 
+		   AND T_K1 = 'SIGNKJP'
+		   AND T_K3 = #{MAX_TK3}
+		 <if test="RCVTYPE != ''">
+		   AND T_DT = #{RCVTYPE}
+		 </if>
+	  ORDER BY T_DT DESC, TO_NUMBER(T_DT1) DESC
+	  ) e
+	</select>
+	<select id="getMAX_TK3" parameterType="String" resultType="String">
+		SELECT NVL(MAX(T_K3),0) FROM TMP_INPSAVE WHERE T_UID = #{value} AND T_K1 = 'SIGNKJP'
+	</select>
+	<select id="selectUSERList" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+		SELECT rownum as SEQ, e.* FROM (
+		SELECT MUI_ID, MUI_NAME, MTI_TEAMNO, MTI_TEAMNAME, MDI_LINKNO, MDI_DPTNAME,
+			   FN_GETCOMCODE_CLS3NAME ('100', '100', MUI_JCCODE) as MUI_JCCODE_NAME,
+         	   case when T_UID is not null then '1' else '0' end as CHK
+		  FROM MF_USER_INFO
+		  	   LEFT OUTER JOIN MF_TEAM_INFO ON MUI_TEAMNO = MTI_TEAMNO
+		  	   LEFT OUTER JOIN MF_DPT_INFO ON MTI_DPTNO = MDI_LINKNO
+		  	   LEFT OUTER JOIN TMP_INPSAVE ON T_UID = #{USERID} AND T_K1 = 'SIGNKJP' AND MUI_ID = T_K2 AND T_K3 = #{MAX_TK3} 
+		 WHERE NOT MUI_ID = #{USERID} 
+		   AND MF_USER_INFO.CMN_DEL_STS = 'N'
+		   <choose>
+		   	<when test="search_TYPE == 'USER'">
+		   		AND MUI_NAME LIKE '%' || #{txt_SearchUSER} || '%'
+			</when>
+		   	<when test="search_TYPE == 'TEAM'">
+				AND MTI_TEAMNAME LIKE '%' || #{txt_SearchUSER} || '%'
+			</when>
+			<otherwise>
+				AND MDI_DPTNAME LIKE '%' || #{txt_SearchUSER} || '%'
+			</otherwise>
+		   </choose>
+		 	order by MUI_JCCODE, MUI_NAME
+		) e
+	</select>
+	<select id="getFileInfo" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+		SELECT BDA_DOCNO, BDA_BZSEQNO, BDA_BZDATE, BDA_CNTNTTYPE, BDA_ATCHFILE, BDA_CMNT, BDA_UPPATH
+  		  from BZ_DATA_ATCH
+		WHERE BDA_DOCNO = #{BDA_DOCNO}
+		  AND BDA_BZSEQNO = #{BDA_BZSEQNO}
+		  <if test="type != ''">
+		  	AND BDA_BZCLS1 = #{type}
+		  </if>
+	</select>
+	<select id="getTEMPInfo" parameterType="hashmap" resultType="String">
+		select count(*) as CNT from TMP_INPSAVE where T_UID = #{USERID} AND T_K1 = 'SIGNKJP' AND T_K2 = #{KJPID} AND T_K3 = #{MAX_TK3}
+	</select>
+	<select id="getMAX_KJNOInfo" parameterType="hashmap" resultType="String">
+		select NVL(MAX(BSL_KJNO),0)+1 as cnt from BZ_SIGN_LIST where BSL_DOCNO = #{DOCNO} and BSL_DOCTYPE = #{SignType}
+	</select>
+	<select id="getMAX_SIGN_NOInfo" parameterType="hashmap" resultType="String">
+		select NVL(MAX(BSL_NO),0)+1 as cnt 
+		  from BZ_SIGN_LIST 
+		 where BSL_USER_ID = #{USERID} 
+		   AND BSL_KIND = 'N' 
+		   AND NOT BSL_PROCSTS = '1' 
+		   AND TO_CHAR(CMN_UPD_DATE, 'yyyy-mm-dd hh24:mi:ss') = (select TO_CHAR(CMN_UPD_DATE, 'yyyy-mm-dd hh24:mi:ss') from BZ_SIGN_LIST where BSL_DOCNO = #{DOCNO} AND BSL_DOCTYPE = #{SignType} AND BSL_KJNO = #{KJNO})
+	</select>
+	<update id="updateCONN_SIGNInfo" parameterType="hashmap" >
+		update BZ_SIGN_LIST SET BSL_SUSIN_ID = #{SUSINID}, BSL_NO = #{BSLNO}
+		 WHERE BSL_DOCNO = #{DOCNO}
+	 	   AND BSL_DOCTYPE = #{SignType}
+	 	   AND BSL_KJNO = #{KJNO}
+	</update>
+	<update id="updateUserInfo" parameterType="hashmap" >
+		update BZ_SIGN_USER a set (a.BSU_KJ_USERNAME, a.BSU_TEAM_NO, a.BSU_TEAM_NAME, a.BSU_DPT_NO, a.BSU_DPT_NAME, a.BSU_JC_NAME)
+		       = (
+		       		SELECT MUI_NAME, MTI_TEAMNO, MTI_TEAMNAME, MDI_LINKNO, MDI_DPTNAME, FN_GETCOMCODE_CLS3NAME ('100', '100', MUI_JCCODE) as MUI_JCCODE_NAME
+		       		  FROM MF_USER_INFO
+		  	   		   	   LEFT OUTER JOIN MF_TEAM_INFO ON MUI_TEAMNO = MTI_TEAMNO
+		  	   			   LEFT OUTER JOIN MF_DPT_INFO ON MTI_DPTNO = MDI_LINKNO
+		  	   		 WHERE a.BSU_KJ_USERID = MUI_ID
+		       	 )
+		 WHERE BSU_DOCNO = #{DOCNO}
+	 	   AND BSU_DOCTYPE = #{SignType}
+	 	   AND BSU_KJNO = #{KJNO}
+	</update>
+	<update id="updateSignUser" parameterType="hashmap" >
+		update BZ_SIGN_LIST a set (a.BSL_USER_NAME, a.BSL_TEAM_NO, a.BSL_TEAM_NAME, a.BSL_DPT_NO, a.BSL_DPT_NAME, a.BSL_JCCODE_NAME)
+		       = (
+		       		SELECT MUI_NAME, MTI_TEAMNO, MTI_TEAMNAME, MDI_LINKNO, MDI_DPTNAME, FN_GETCOMCODE_CLS3NAME ('100', '100', MUI_JCCODE)
+		       		  FROM MF_USER_INFO
+		  	   		   	   LEFT OUTER JOIN MF_TEAM_INFO ON MUI_TEAMNO = MTI_TEAMNO
+		  	   			   LEFT OUTER JOIN MF_DPT_INFO ON MTI_DPTNO = MDI_LINKNO
+		  	   		 WHERE a.BSL_USER_ID = MUI_ID
+		       	 )
+		 WHERE BSL_DOCNO = #{DOCNO}
+	 	   AND BSL_DOCTYPE = #{SignType}
+	 	   AND BSL_KJNO = #{KJNO}
+	</update>
+	<update id="updateCNFMSTSUserInfo" parameterType="hashmap" >
+		update BZ_SIGN_USER set BSU_CNFMSTS = 'Y', BSU_CNFMDATE = SYSDATE
+		 WHERE BSU_DOCNO = #{DOCNO}
+	 	   AND BSU_DOCTYPE = #{SignType}
+	 	   AND BSU_KJNO = #{KJNO}
+	 	   AND BSU_KJ_USERID = #{USERID}
+	 	   AND BSU_CNFMSTS = 'N'
+	</update>
+	<update id="updateSignUserInfo" parameterType="hashmap" >
+		update BZ_SIGN_USER set BSU_KJDATE = SYSDATE, BSU_KJSTS = #{KJSTS}, BSU_KJPRCSTS = #{KJPRCSTS}, CMN_UPD_DATE = SYSDATE, CMN_UPD_PROG = '0701SIGN', CMN_UPD_ID = #{USERID}
+		 WHERE BSU_DOCNO = #{DOCNO}
+	 	   AND BSU_DOCTYPE = #{SignType}
+	 	   AND BSU_KJNO = #{KJNO}
+	 	   AND BSU_KJ_USERID = #{USERID}
+	</update>
+	<update id="updateNextSignUserInfo" parameterType="hashmap" >
+		update BZ_SIGN_USER set BSU_KJPRCSTS = 'Y'
+		 WHERE BSU_DOCNO = #{DOCNO}
+	 	   AND BSU_DOCTYPE = #{SignType}
+	 	   AND BSU_KJNO = #{KJNO}
+	 	   AND BSU_KJ_USERID = #{KJ_USERID}
+	</update>
+
+	<update id="updateSignInfo" parameterType="hashmap" >
+		update BZ_SIGN_LIST set BSL_CMNT = #{SIGNCMNT}, BSL_DOCCMNT = #{DOCCMNT}, BSL_PROCSTS = #{PROCSTS}, BSL_RSLTSTS = #{RSLTSTS}, CMN_UPD_DATE = SYSDATE, CMN_UPD_PROG = '0701SIGN', CMN_UPD_ID = #{USERID}
+		 WHERE BSL_DOCNO = #{DOCNO}
+	 	   AND BSL_DOCTYPE = #{SignType}
+	 	   AND BSL_KJNO = #{KJNO}
+	</update>
+	<insert id="insertSIGNInfo" parameterType="hashmap">
+		insert into BZ_SIGN_LIST(BSL_DOCNO,BSL_DOCTYPE,BSL_KJNO,BSL_KIND,BSL_DOCCMNT,BSL_PROCSTS,BSL_RSLTSTS,BSL_USER_ID,BSL_USER_NAME, BSL_TEAM_NO, BSL_TEAM_NAME, BSL_DPT_NO, BSL_DPT_NAME, BSL_CMNT, BSL_JCCODE_NAME, CMN_DEL_STS,CMN_MAK_DATE,CMN_MAK_PROG,CMN_MAK_ID,CMN_UPD_DATE,CMN_UPD_PROG,CMN_UPD_ID)
+			 			  values(#{DOCNO}, #{SignType}, #{KJNO}, #{KIND}, #{DOCCMNT}, #{PROCSTS}, #{RSLTSTS}, #{USERID},#{USERNAME},#{TEAMNO},#{TEAMNAME},#{DPTNO},#{DPTNAME},#{SIGNCMNT}, #{JCNAME},'N',SYSDATE,'SIGN0701',#{USERID},SYSDATE,'SIGN0701',#{USERID})
+	</insert>
+	<insert id="insertSIGN_USERList" parameterType="hashmap">
+		insert into BZ_SIGN_USER(BSU_DOCNO,BSU_DOCTYPE,BSU_KJNO,BSU_KJ_USERID,BSU_KJ_USERNAME, BSU_TEAM_NO,BSU_TEAM_NAME,BSU_DPT_NO,BSU_DPT_NAME, BSU_ORDER,BSU_RCVTYPE,BSU_CNFMSTS,BSU_KJPRCSTS,BSU_KJSTS,BSU_JC_NAME,CMN_DEL_STS,CMN_MAK_DATE,CMN_MAK_PROG,CMN_MAK_ID,CMN_UPD_DATE,CMN_UPD_PROG,CMN_UPD_ID)
+		select #{DOCNO}, #{SignType}, #{KJNO}, T_K2, T_DT2, T_DT3, T_DT4, T_DT5, T_DT6, T_DT1, a.T_DT, 'N', CASE WHEN minNo IS NOT NULL THEN 'Y' ELSE 'N' END, 'X', T_DT8, 'N', SYSDATE, 'SIGN0701', #{USERID}, SYSDATE, 'SIGN0701', #{USERID}
+		  FROM TMP_INPSAVE a LEFT OUTER JOIN (select T_DT, MIN(TO_NUMBER(T_DT1)) as minNo from TMP_INPSAVE where T_UID = #{USERID} AND T_K1 = 'SIGNKJP' AND T_K3 = #{MAX_TK3} AND T_DT = 'RCV' GROUP BY T_DT) b ON a.T_DT = b.T_DT AND a.T_DT1 = b.minNo
+		 WHERE a.T_UID = #{USERID} AND a.T_K1 = 'SIGNKJP' AND a.T_K3 = #{MAX_TK3}
+	</insert>
+	<insert id="insertTEMP_KJPList" parameterType="hashmap" >
+		insert into TMP_INPSAVE(T_UID,T_K1,T_K2,T_K3,T_DT,T_DT1,T_DT2,T_DT3,T_DT4,T_DT5,T_DT6,T_DT7,T_DT8)
+		SELECT MUK_USERID AS T_UID, 'SIGNKJP' AS T_K1, MUK_KJID AS T_K2, #{MAX_TK3} AS T_K3, 
+			   MUK_RCVTYPE, MUK_KJSEQ, MUI_NAME, MTI_TEAMNO, MTI_TEAMNAME, MDI_LINKNO, MDI_DPTNAME,
+			   MUI_JCCODE, FN_GETCOMCODE_CLS3NAME ('100', '100', MUI_JCCODE) as MUI_JCCODE_NAME
+		  FROM MF_USER_KJP 
+		  	   LEFT OUTER JOIN MF_USER_INFO ON MUI_ID = MUK_KJID
+		  	   LEFT OUTER JOIN MF_TEAM_INFO ON MUI_TEAMNO = MTI_TEAMNO
+		  	   LEFT OUTER JOIN MF_DPT_INFO ON MTI_DPTNO = MDI_LINKNO
+		 WHERE MUK_USERID = #{USERID} 
+	</insert>
+	<insert id="insertTEMP_SIGNUSERList" parameterType="hashmap" >
+		insert into TMP_INPSAVE(T_UID,T_K1,T_K2,T_K3,T_DT,T_DT1,T_DT2,T_DT3,T_DT4,T_DT5,T_DT6,T_DT7,T_DT8)
+		SELECT #{USERID} AS T_UID, 'SIGNKJP' AS T_K1, BSU_KJ_USERID AS T_K2, #{MAX_TK3} AS T_K3, 
+			   BSU_RCVTYPE, BSU_ORDER, MUI_NAME, MTI_TEAMNO, MTI_TEAMNAME, MDI_LINKNO, MDI_DPTNAME,
+			   MUI_JCCODE, FN_GETCOMCODE_CLS3NAME ('100', '100', MUI_JCCODE) as MUI_JCCODE_NAME
+		  FROM BZ_SIGN_USER
+		  	   LEFT OUTER JOIN MF_USER_INFO ON BSU_KJ_USERID = MUI_ID
+		  	   LEFT OUTER JOIN MF_TEAM_INFO ON BSU_TEAM_NO = MTI_TEAMNO
+		  	   LEFT OUTER JOIN MF_DPT_INFO ON BSU_DPT_NO = MDI_LINKNO
+		 WHERE BSU_DOCNO = #{DOCNO}
+		   AND BSU_DOCTYPE = #{DOCTYPE} 
+		   AND BSU_KJNO = #{KJNO}
+	</insert>
+	<insert id="insertTEMP_KJPInfo" parameterType="hashmap" >
+		insert into TMP_INPSAVE(T_UID,T_K1,T_K2,T_K3,T_DT,T_DT1,T_DT2,T_DT3,T_DT4,T_DT5,T_DT6,T_DT7,T_DT8)
+		SELECT #{USERID} AS T_UID, 'SIGNKJP' AS T_K1, #{KJPID} AS T_K2, #{MAX_TK3} AS T_K3, 
+			   #{KJPTYPE}, (select NVL(MAX(TO_NUMBER(T_DT1)),0)+1 from TMP_INPSAVE WHERE T_UID = #{USERID} AND T_K1 = 'SIGNKJP' AND T_K3 = #{MAX_TK3} AND T_DT = #{KJPTYPE}), 
+			   MUI_NAME, MTI_TEAMNO, MTI_TEAMNAME, MDI_LINKNO, MDI_DPTNAME,
+			   MUI_JCCODE, FN_GETCOMCODE_CLS3NAME ('100', '100', MUI_JCCODE) as MUI_JCCODE_NAME
+		  FROM MF_USER_INFO
+		  	   LEFT OUTER JOIN MF_TEAM_INFO ON MUI_TEAMNO = MTI_TEAMNO
+		  	   LEFT OUTER JOIN MF_DPT_INFO ON MTI_DPTNO = MDI_LINKNO
+		 WHERE MUI_ID = #{KJPID} 
+	</insert>
+	<delete id="deleteSIGNInfo" parameterType="hashmap" >
+		delete from BZ_SIGN_LIST where BSL_DOCNO = #{DOCNO} AND BSL_DOCTYPE = #{SignType} AND BSL_KJNO = #{KJNO}
+	</delete>
+	<delete id="deleteSIGNUserList" parameterType="hashmap" >
+		delete from BZ_SIGN_USER where BSU_DOCNO = #{DOCNO} AND BSU_DOCTYPE = #{SignType} AND BSU_KJNO = #{KJNO}
+	</delete>
+	<delete id="deleteTEMPList" parameterType="String" >
+		delete from TMP_INPSAVE where T_UID = #{value} AND T_K1 = 'SIGNKJP'
+	</delete>
+	<delete id="deleteTEMPInfo" parameterType="hashmap" >
+		delete from TMP_INPSAVE where T_UID = #{USERID} AND T_K1 = 'SIGNKJP' AND T_K2 = #{KJPID} AND T_K3 = #{MAX_TK3}
+	</delete>
+	<delete id="deleteFileInfo" parameterType="hashmap">
+		delete from BZ_DATA_ATCH WHERE BDA_DOCNO = #{BDA_DOCNO} AND BDA_BZSEQNO = #{BDA_BZSEQNO} AND BDA_BZCLS1 = #{type}
+	</delete>
+</mapper>

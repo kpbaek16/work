@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="His0701">
+
+	<sql id="AniHisList">
+        SELECT A.* 
+        FROM
+        (
+            SELECT A.* 
+                ,( SELECT MCC_S_NAME
+                   FROM MF_COMM_CODE
+                   WHERE MCC_L_CODE = '700' AND MCC_M_CODE='701' AND MCC_S_CODE = A.HAC_LOGTYPE) TXT_HAC_LOGTYPE
+            FROM 
+            (
+                SELECT 
+                    H.HAC_SEQ, H.HAC_ANICLSCODE, H.CMN_DEL_STS, 
+                    H.CMN_MAK_DATE, H.CMN_MAK_PROG, H.CMN_MAK_ID, 
+                    H.CMN_UPD_DATE, H.CMN_UPD_PROG, H.CMN_UPD_ID, 
+                    H.HAC_LOGTYPE, H.HAC_BFR_VL, H.HAC_AFT_VL, 
+                    H.HAC_LOGDATE
+                    , AC.MAC_ANICLSCODE, AC.MAC_NAME
+                FROM HS_ANI_CLS H, MF_ANI_CLS AC
+                WHERE H.HAC_ANICLSCODE = AC.MAC_ANICLSCODE(+)
+
+				<if test="cal_1 != ''">
+				<![CDATA[
+					   AND TO_CHAR(H.HAC_LOGDATE,'YYYY-MM-DD') >= #{cal_1}
+				]]>
+				</if>
+				<if test="cal_2 != ''">
+				<![CDATA[
+					   AND TO_CHAR(H.HAC_LOGDATE,'YYYY-MM-DD') <= #{cal_2}
+				]]>
+				</if>
+ 				<if test="sch_mac_name != ''">
+				<![CDATA[
+                       AND AC.MAC_NAME LIKE '%' || #{sch_mac_name} || '%'
+				]]>
+				</if>
+ 				<if test="sch_aniclscode != ''">
+				<![CDATA[
+                       AND AC.MAC_ANICLSCODE LIKE '%' || #{sch_aniclscode} || '%'
+				]]>
+				</if>
+ 		    ) A    
+		) A   
+	</sql>
+
+	<select id="selectAniHisList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH HIS_LIST AS (
+			<include refid="AniHisList" />
+		)
+        SELECT A.* 
+        	,(CASE WHEN (HAC_LOGTYPE IN ('1', '2')) THEN HAC_BFR_VL END) TXT_HAC_BFR_VL
+        	,(CASE WHEN (HAC_LOGTYPE IN ('1', '2')) THEN HAC_AFT_VL END) TXT_HAC_AFT_VL
+            ,(SELECT MUI_NAME FROM MF_USER_INFO A 
+              WHERE EXISTS ( SELECT 1 FROM MF_SYS_USER WHERE MSU_USERID = A.CMN_UPD_ID )
+             ) UPD_MUI_NAME
+            ,TO_CHAR(A.HAC_LOGDATE,'YYYY-MM-DD') TXT_HAC_LOGDATE
+        FROM HIS_LIST A
+        ORDER BY HAC_LOGDATE DESC
+	</select>
+
+</mapper>

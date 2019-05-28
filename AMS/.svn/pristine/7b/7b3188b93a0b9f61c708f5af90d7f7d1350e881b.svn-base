@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Sta0601">
+
+	<sql id="AniList">
+		<![CDATA[
+                SELECT A.*, AC.MAC_ENAME, AC.MAC_SNAME, AC.MAC_CITES, AC.MAC_RANK, AC.MAC_ENDANG, AC.MAC_NATMON,
+                       FN_GETCOMCODE_CLS3NAME ('200', '205', MAC_RANK) TXT_MAC_RANK,
+                       FN_GETCOMCODE_CLS3NAME ('200', '206', MAC_CITES) TXT_MAC_CITES,
+                       FN_GETCOMCODE_CLS3NAME ('200', '207', MAC_ENDANG) TXT_MAC_ENDANG,
+	                   (CASE
+	                       WHEN TO_CHAR(A.RENTEDATE, 'YYYY-MM-DD') >= #{cal_1}
+	                       THEN
+	                           1
+	                       ELSE
+	                           0
+	                   END) AS CNT_ANI_BOYUK,
+	                   DENSE_RANK() OVER ( ORDER BY A.MAC_ANICODE1, A.MAC_ANICODE2 ) ANI2_ROW,
+	                   ROW_NUMBER() OVER (PARTITION BY A.MAC_ANICODE1, A.MAC_ANICODE2 ORDER BY A.MAC_NAME ) ANILIST_ROW
+                FROM
+                (                 
+                    SELECT A.MAC_NAME1, A.MAC_NAME2, A.MAC_NAME, A.MAC_ANICODE1, A.MAC_ANICODE2, A.MAC_ANICLSCODE, A.MAI_ANICODE, A.MAI_SEX,
+                           CASE WHEN (MAI_SEX IN ('1', '3')) THEN 1 ELSE 0 END MAI_SEX_M,
+                           CASE WHEN (MAI_SEX IN ('2', '4')) THEN 1 ELSE 0 END MAI_SEX_F,
+                           CASE WHEN (MAI_SEX IN ('5', '6')) THEN 1 ELSE 0 END MAI_SEX_A,
+                           B.DAIO_ANICODE, B.RENTEDATE
+                    FROM
+                    (
+                        SELECT   (SELECT MAC_NAME
+                                  FROM     MF_ANI_CLS
+                                  WHERE     MAC_ANICLSCODE = CONCAT (A.MAC_ANICODE1, '0-0-0')) AS MAC_NAME1,
+                                 (SELECT MAC_NAME
+                                  FROM     MF_ANI_CLS
+                                  WHERE     MAC_ANICLSCODE = A.MAC_ANICODE1 || A.MAC_ANICODE2 || '-0-0') AS MAC_NAME2,
+                                  MAC_ANICODE1,
+                                  MAC_ANICODE2,
+                                  MAC_ANICLSCODE,
+                                  MAC_NAME,
+                                  MAI_ANICODE,
+                                  MAI_SEX
+                        FROM       MF_ANI_CLS A,
+                                   MF_ANI_INFO C
+                        WHERE       NOT A.MAC_ANICODE4_SEQ = 0
+                                   AND C.MAI_ANICLSCODE = A.MAC_ANICLSCODE
+                                   AND (C.MAI_DETHTYPE = '1' OR C.MAI_DETHTYPE = '2'
+                                        AND TO_CHAR(C.MAI_DETHDATE, 'YYYY-MM-DD') BETWEEN #{cal_1} AND #{cal_2})
+                                   AND C.CMN_DEL_STS = 'N'
+		]]>
+		<if test="sch_anicode1 != ''">
+                                   AND A.MAC_ANICODE1 = #{sch_anicode1}
+		</if>
+		<![CDATA[
+                    ) A, (  SELECT   DAIO_ANICODE,
+                                   MAX(CASE
+                                           WHEN NOT (DAIO_RESN = '1')
+                                           THEN
+                                               DAIO_IODATE
+                                       END)
+                                       AS DATE1,
+                                   MAX(CASE
+                                           WHEN DAIO_IOTYPE = '1' AND DAIO_BOYUKSTS = 'Y'
+                                           THEN
+                                               DAIO_RENTEDATE
+                                       END)
+                                       AS RENTEDATE
+                            FROM   DT_ANI_IO
+                            WHERE  TO_CHAR(DAIO_IODATE, 'YYYY-MM-DD') <= #{cal_2}
+                            AND NOT DAIO_IOTYPE = '2'
+                            GROUP BY   DAIO_ANICODE ) B
+                    WHERE A.MAI_ANICODE = B.DAIO_ANICODE
+                ) A, MF_ANI_CLS AC 
+                WHERE A.MAC_ANICLSCODE = AC.MAC_ANICLSCODE 
+                ORDER BY A.MAC_ANICODE1, A.MAC_ANICODE2, A.MAC_NAME
+		]]>
+	</sql>
+
+	<select id="selectAniClsList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+        WITH CLS_LIST AS (
+		<include refid="AniList" />
+        ) 
+        SELECT MAC_NAME1, MAC_NAME2, MAC_NAME
+               , DENSE_RANK() OVER ( ORDER BY MAC_NAME1 ) ANI1_ROW
+               , DENSE_RANK() OVER (PARTITION BY A.MAC_NAME1 ORDER BY MAC_NAME1, MAC_NAME2 ) ANI2_ROW
+               , ROW_NUMBER() OVER (PARTITION BY A.MAC_NAME1, A.MAC_NAME2 ORDER BY A.MAC_NAME ) CLS_ROW
+               , COUNT (DISTINCT MAI_ANICODE) CNT_MAI_ANICODE,
+                SUM (MAI_SEX_M) MAI_SEX_M,
+                SUM (MAI_SEX_F) MAI_SEX_F,
+                SUM (MAI_SEX_A) MAI_SEX_A,
+                COUNT (MAI_SEX) CNT_MAI_SEX,
+                SUM(CASE
+                       WHEN TO_CHAR(A.RENTEDATE, 'YYYY-MM-DD') >= #{cal_1}
+                       THEN
+                           1
+                       ELSE
+                           0
+                  END) AS CNT_BOYUK,
+                MAC_ENAME,
+                MAC_SNAME,
+                MAC_NATMON,
+                TXT_MAC_CITES,
+                TXT_MAC_RANK,
+                TXT_MAC_ENDANG
+        FROM CLS_LIST A
+        WHERE MAC_RANK != 0
+        GROUP BY (MAC_NAME1, MAC_NAME2, MAC_NAME
+               , MAC_ENAME, MAC_SNAME, MAC_NATMON, TXT_MAC_RANK, TXT_MAC_CITES, MAC_RANK, TXT_MAC_ENDANG)
+        ORDER BY MAC_NAME1, MAC_NAME2, MAC_NAME    
+	</select>
+
+	<select id="selectAniClsTotList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+        SELECT MAC_NAME1, MAC_NAME2,
+                DENSE_RANK() OVER ( ORDER BY MAC_NAME1 ) ANI1_ROW,
+                DENSE_RANK() OVER (PARTITION BY MAC_NAME1 ORDER BY MAC_NAME1, MAC_NAME2 ) ANI2_ROW,
+                COUNT (DISTINCT MAC_ANICLSCODE) CNT_MAC_ANICLSCODE,
+                COUNT (DISTINCT MAI_ANICODE) CNT_MAI_ANICODE,
+                SUM (MAI_SEX_M) MAI_SEX_M,
+                SUM (MAI_SEX_F) MAI_SEX_F,
+                SUM (MAI_SEX_A) MAI_SEX_A,
+                COUNT (MAI_SEX) CNT_MAI_SEX,
+                COUNT (DISTINCT MAC_NATMON) CNT_MAC_NATMON,
+                COUNT (DISTINCT MAC_CITES) CNT_MAC_CITES,
+                COUNT (DISTINCT MAC_ENDANG) CNT_MAC_ENDANG,
+                COUNT (DISTINCT MAC_RANK) CNT_MAC_RANK,
+                SUM (DECODE(MAC_NATMON,0,0,1)) CNT_ANI_MAC_NATMON,
+                SUM (DECODE(MAC_CITES,0,0,1)) CNT_ANI_MAC_CITES,
+                SUM (DECODE(MAC_ENDANG,0,0,1)) CNT_ANI_MAC_ENDANG,
+                SUM (DECODE(MAC_RANK,'1',1,'2',1,'3',1,0)) CNT_ANI_MAC_RANK,
+                COUNT (DECODE(MAC_RANK,'1',1,0)) CNT_ANI_MAC_RANK_1,
+                COUNT (DECODE(MAC_RANK,'2',1,0)) CNT_ANI_MAC_RANK_2,
+                COUNT (DECODE(MAC_RANK,'3',1,0)) CNT_ANI_MAC_RANK_3
+        FROM (
+		<include refid="AniList" />
+		) 
+		<![CDATA[
+        WHERE MAC_RANK != 0
+        GROUP BY MAC_NAME1, MAC_NAME2
+        ORDER BY MAC_NAME1, MAC_NAME2
+		]]>
+	</select>
+	
+	<select id="selectTotAniClsList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		SELECT MAC_NAME1
+		        ,NVL(MAX(DECODE(MAC_RANK,1, CNT_MAC_ANICLSCODE_1)),0) CNT_ANICLS_1
+		        ,NVL(MAX(DECODE(MAC_RANK,2, CNT_MAC_ANICLSCODE_2)),0) CNT_ANICLS_2
+		        ,NVL(MAX(DECODE(MAC_RANK,3, CNT_MAC_ANICLSCODE_3)),0) CNT_ANICLS_3
+		        ,NVL(MAX(DECODE(MAC_RANK,1, CNT_MAI_ANICODE_1)),0) CNT_ANI_1
+		        ,NVL(MAX(DECODE(MAC_RANK,2, CNT_MAI_ANICODE_2)),0) CNT_ANI_2
+		        ,NVL(MAX(DECODE(MAC_RANK,3, CNT_MAI_ANICODE_3)),0) CNT_ANI_3
+		        ,NVL(MAX(DECODE(MAC_RANK,1, CNT_MAC_NATMON)),0) CNT_NATMON_1
+		        ,NVL(MAX(DECODE(MAC_RANK,2, CNT_MAC_NATMON)),0) CNT_NATMON_2
+		        ,NVL(MAX(DECODE(MAC_RANK,3, CNT_MAC_NATMON)),0) CNT_NATMON_3
+		        ,NVL(MAX(DECODE(MAC_RANK,1, CNT_MAC_CITES)),0) CNT_CITES_1
+		        ,NVL(MAX(DECODE(MAC_RANK,2, CNT_MAC_CITES)),0) CNT_CITES_2
+		        ,NVL(MAX(DECODE(MAC_RANK,3, CNT_MAC_CITES)),0) CNT_CITES_3
+		        ,NVL(MAX(DECODE(MAC_RANK,1, CNT_MAC_ENDANG)),0) CNT_ENDANG_1
+		        ,NVL(MAX(DECODE(MAC_RANK,2, CNT_MAC_ENDANG)),0) CNT_ENDANG_2
+		        ,NVL(MAX(DECODE(MAC_RANK,3, CNT_MAC_ENDANG)),0) CNT_ENDANG_3
+		FROM
+		(
+			SELECT MAC_NAME1, MAC_RANK,
+	                DECODE(MAC_RANK,'1',COUNT (DISTINCT MAC_ANICLSCODE)) CNT_MAC_ANICLSCODE_1,
+	                DECODE(MAC_RANK,'2',COUNT (DISTINCT MAC_ANICLSCODE)) CNT_MAC_ANICLSCODE_2,
+	                DECODE(MAC_RANK,'3',COUNT (DISTINCT MAC_ANICLSCODE)) CNT_MAC_ANICLSCODE_3,
+	                DECODE(MAC_RANK,'1',COUNT (DISTINCT MAI_ANICODE)) CNT_MAI_ANICODE_1,
+	                DECODE(MAC_RANK,'2',COUNT (DISTINCT MAI_ANICODE)) CNT_MAI_ANICODE_2,
+	                DECODE(MAC_RANK,'3',COUNT (DISTINCT MAI_ANICODE)) CNT_MAI_ANICODE_3,
+	                COUNT (DISTINCT MAI_ANICODE) CNT_MAI_ANICODE,
+			        SUM(CASE
+			               WHEN TO_CHAR(A.RENTEDATE, 'YYYY-MM-DD') >= #{cal_1}
+			               THEN
+			                   1
+			               ELSE
+			                   0
+			          END) AS CNT_BOYUK,
+			        COUNT (DISTINCT MAC_NATMON) CNT_MAC_NATMON,
+			        COUNT (DISTINCT MAC_CITES) CNT_MAC_CITES,
+			        COUNT (DISTINCT MAC_ENDANG) CNT_MAC_ENDANG
+			FROM
+			(
+			<include refid="AniList" />
+			) A
+			<![CDATA[
+			WHERE MAC_RANK != 0
+			GROUP BY MAC_NAME1, MAC_RANK
+			ORDER BY MAC_NAME1, MAC_RANK
+			]]>
+		) A
+		GROUP BY MAC_NAME1
+	</select>
+	
+	<select id="selectTotClsList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		<![CDATA[
+		SELECT  MAX(DECODE(MAC_RANK,1,COUNT (MAC_RANK))) CNT_RANK_1
+	            , MAX(DECODE(MAC_RANK,2,COUNT (MAC_RANK))) CNT_RANK_2
+	            , MAX(DECODE(MAC_RANK,3,COUNT (MAC_RANK))) CNT_RANK_3
+	            
+	            , MAX(DECODE(MAC_RANK,1,COUNT (DISTINCT MAC_ANICLSCODE))) CNT_ANICLS_1
+	            , MAX(DECODE(MAC_RANK,2,COUNT (DISTINCT MAC_ANICLSCODE))) CNT_ANICLS_2
+	            , MAX(DECODE(MAC_RANK,3,COUNT (DISTINCT MAC_ANICLSCODE))) CNT_ANICLS_3
+	            
+	            , MAX(DECODE(MAC_RANK,1,SUM(CNT_MAI_ANICODE_1))) CNT_ANI_1
+	            , MAX(DECODE(MAC_RANK,2,SUM(CNT_MAI_ANICODE_2))) CNT_ANI_2
+	            , MAX(DECODE(MAC_RANK,3,SUM(CNT_MAI_ANICODE_3))) CNT_ANI_3
+	            
+	            , MAX(DECODE(MAC_RANK,1,SUM(CNT_BOYUK_1))) CNT_BOYUK_1
+	            , MAX(DECODE(MAC_RANK,2,SUM(CNT_BOYUK_2))) CNT_BOYUK_2
+	            , MAX(DECODE(MAC_RANK,3,SUM(CNT_BOYUK_3))) CNT_BOYUK_3
+	    
+	            , MAX(DECODE(MAC_RANK,1,SUM(CNT_ANICLS_NATMON_1))) CNT_NATMON_1
+	            , MAX(DECODE(MAC_RANK,2,SUM(CNT_ANICLS_NATMON_2))) CNT_NATMON_2
+	            , MAX(DECODE(MAC_RANK,3,SUM(CNT_ANICLS_NATMON_3))) CNT_NATMON_3
+	            
+	            , MAX(DECODE(MAC_RANK,1,SUM(CNT_ANICLS_CITES_1))) CNT_CITES_1
+	            , MAX(DECODE(MAC_RANK,2,SUM(CNT_ANICLS_CITES_2))) CNT_CITES_2
+	            , MAX(DECODE(MAC_RANK,3,SUM(CNT_ANICLS_CITES_3))) CNT_CITES_3
+	            
+	            , MAX(DECODE(MAC_RANK,1,SUM(CNT_ANICLS_ENDANG_1))) CNT_ENDANG_1
+	            , MAX(DECODE(MAC_RANK,2,SUM(CNT_ANICLS_ENDANG_2))) CNT_ENDANG_2
+	            , MAX(DECODE(MAC_RANK,3,SUM(CNT_ANICLS_ENDANG_3))) CNT_ENDANG_3
+	            
+	            , MAX(DECODE(MAC_RANK,1,SUM(CNT_ANI_BOYUK_1))) CNT_ANI_BOYUK_1
+	            , MAX(DECODE(MAC_RANK,2,SUM(CNT_ANI_BOYUK_2))) CNT_ANI_BOYUK_2
+	            , MAX(DECODE(MAC_RANK,3,SUM(CNT_ANI_BOYUK_3))) CNT_ANI_BOYUK_3
+	            
+	            , MAX(DECODE(MAC_RANK,1,SUM(CNT_ANI_NATMON_1))) CNT_ANI_NATMON_1
+	            , MAX(DECODE(MAC_RANK,2,SUM(CNT_ANI_NATMON_2))) CNT_ANI_NATMON_2
+	            , MAX(DECODE(MAC_RANK,3,SUM(CNT_ANI_NATMON_3))) CNT_ANI_NATMON_3
+	            
+	            , MAX(DECODE(MAC_RANK,1,SUM(CNT_ANI_CITES_1))) CNT_ANI_CITES_1
+	            , MAX(DECODE(MAC_RANK,2,SUM(CNT_ANI_CITES_2))) CNT_ANI_CITES_2
+	            , MAX(DECODE(MAC_RANK,3,SUM(CNT_ANI_CITES_3))) CNT_ANI_CITES_3
+	            
+	            , MAX(DECODE(MAC_RANK,1,SUM(CNT_ANI_ENDANG_1))) CNT_ANI_ENDANG_1
+	            , MAX(DECODE(MAC_RANK,2,SUM(CNT_ANI_ENDANG_2))) CNT_ANI_ENDANG_2
+	            , MAX(DECODE(MAC_RANK,3,SUM(CNT_ANI_ENDANG_3))) CNT_ANI_ENDANG_3
+	            
+	    FROM
+	    (
+	            SELECT MAC_RANK, MAC_ANICLSCODE,
+	                    COUNT (DISTINCT MAI_ANICODE) CNT_MAI_ANICODE,
+	                    DECODE(MAC_RANK,'1',COUNT (DISTINCT MAI_ANICODE)) CNT_MAI_ANICODE_1,
+	                    DECODE(MAC_RANK,'2',COUNT (DISTINCT MAI_ANICODE)) CNT_MAI_ANICODE_2,
+	                    DECODE(MAC_RANK,'3',COUNT (DISTINCT MAI_ANICODE)) CNT_MAI_ANICODE_3,
+	                    DECODE(MAC_RANK,'1','') AS CNT_BOYUK_1,
+	                    DECODE(MAC_RANK,'2','') AS CNT_BOYUK_2,
+	                    DECODE(MAC_RANK,'3','') AS CNT_BOYUK_3,
+	                    DECODE(MAC_RANK,'1',MAX (DECODE(MAC_NATMON,0,0,1))) CNT_ANICLS_NATMON_1,
+	                    DECODE(MAC_RANK,'2',MAX (DECODE(MAC_NATMON,0,0,1))) CNT_ANICLS_NATMON_2,
+	                    DECODE(MAC_RANK,'3',MAX (DECODE(MAC_NATMON,0,0,1))) CNT_ANICLS_NATMON_3,
+	                    DECODE(MAC_RANK,'1',MAX (DECODE(MAC_CITES,0,0,1))) CNT_ANICLS_CITES_1,
+	                    DECODE(MAC_RANK,'2',MAX (DECODE(MAC_CITES,0,0,1))) CNT_ANICLS_CITES_2,
+	                    DECODE(MAC_RANK,'3',MAX (DECODE(MAC_CITES,0,0,1))) CNT_ANICLS_CITES_3,
+	                    DECODE(MAC_RANK,'1',MAX (DECODE(MAC_ENDANG,0,0,1))) CNT_ANICLS_ENDANG_1,
+	                    DECODE(MAC_RANK,'2',MAX (DECODE(MAC_ENDANG,0,0,1))) CNT_ANICLS_ENDANG_2,
+	                    DECODE(MAC_RANK,'3',MAX(DECODE(MAC_ENDANG,0,0,1))) CNT_ANICLS_ENDANG_3,
+	                    DECODE(MAC_RANK,'1',SUM (CNT_ANI_BOYUK)) AS CNT_ANI_BOYUK_1,
+	                    DECODE(MAC_RANK,'2',SUM (CNT_ANI_BOYUK)) AS CNT_ANI_BOYUK_2,
+	                    DECODE(MAC_RANK,'3',SUM (CNT_ANI_BOYUK)) AS CNT_ANI_BOYUK_3,
+	                    DECODE(MAC_RANK,'1',SUM (DECODE(MAC_NATMON,0,0,1))) CNT_ANI_NATMON_1,
+	                    DECODE(MAC_RANK,'2',SUM (DECODE(MAC_NATMON,0,0,1))) CNT_ANI_NATMON_2,
+	                    DECODE(MAC_RANK,'3',SUM (DECODE(MAC_NATMON,0,0,1))) CNT_ANI_NATMON_3,
+	                    DECODE(MAC_RANK,'1',SUM (DECODE(MAC_CITES,0,0,1))) CNT_ANI_CITES_1,
+	                    DECODE(MAC_RANK,'2',SUM (DECODE(MAC_CITES,0,0,1))) CNT_ANI_CITES_2,
+	                    DECODE(MAC_RANK,'3',SUM (DECODE(MAC_CITES,0,0,1))) CNT_ANI_CITES_3,
+	                    DECODE(MAC_RANK,'1',SUM (DECODE(MAC_ENDANG,0,0,1))) CNT_ANI_ENDANG_1,
+	                    DECODE(MAC_RANK,'2',SUM (DECODE(MAC_ENDANG,0,0,1))) CNT_ANI_ENDANG_2,
+	                    DECODE(MAC_RANK,'3',SUM (DECODE(MAC_ENDANG,0,0,1))) CNT_ANI_ENDANG_3
+		        FROM (
+				]]>
+				<include refid="AniList" />
+		        ) A
+		        WHERE MAC_RANK != 0
+		        GROUP BY MAC_RANK,MAC_ANICLSCODE
+		         
+		) A
+		GROUP BY MAC_RANK	
+			
+		</select>
+		
+		<select id="selectClsList" resultType="java.util.LinkedHashMap" parameterType="hashmap">
+		WITH CLS_LIST AS (
+			<include refid="AniList" />
+		) 
+		<![CDATA[
+	    SELECT MAC_NAME1
+	    FROM CLS_LIST A
+	    GROUP BY MAC_NAME1
+	    ORDER BY MAC_NAME1
+		]]>
+	</select>
+	
+</mapper>

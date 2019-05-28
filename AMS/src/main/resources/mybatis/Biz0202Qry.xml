@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="Biz0202">
+	<select id="selectBizManualList" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+		SELECT rownum as seq, e.* FROM (
+		SELECT BBI_DOCNO, BBI_BBSTYPE, BBI_TIT, BBI_OPEN_YN, BDA_CMNT, 
+			   FN_GETUSERID_TO_NAME(BZ_BBS_INFO.CMN_MAK_ID) AS CMN_MAK_NAME, BZ_BBS_INFO.CMN_MAK_ID AS CMN_MAK_ID,
+			   to_char(BZ_BBS_INFO.CMN_MAK_DATE,'YYYY-MM-DD') AS CMN_MAK_DATE, 
+			   to_char(BZ_BBS_INFO.CMN_UPD_DATE,'YYYY-MM-DD') AS CMN_UPD_DATE,
+			   FN_GETCOMCODE_CLS3NAME ('100', '112', BBI_MANUALTYPE) as BBI_MANUALTYPE
+		FROM BZ_BBS_INFO LEFT OUTER JOIN BZ_DATA_ATCH ON BDA_DocNo = BBI_DOCNO AND BDA_BzCls1 = 'BIZ_M' AND BDA_BzSeqNo = '1'
+		WHERE BZ_BBS_INFO.CMN_DEL_STS = 'N'
+		  AND BBI_BBSTYPE = '1'
+		AND (BZ_BBS_INFO.CMN_MAK_ID = #{USER_ID} OR BBI_OPEN_YN = 'Y')
+		<if test="bis_Seqtype == 'name'">
+		AND BBI_TIT LIKE '%' || #{SeqTEXT} || '%'
+		</if>
+		<if test="bis_Seqtype == 'cmnt'">
+		AND BBI_CTNT LIKE '%' || #{SeqTEXT} || '%'
+		</if>
+		order by BZ_BBS_INFO.CMN_MAK_DATE desc
+		) e
+	</select>
+	<select id="selectBizArticleList" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+		SELECT rownum as seq, e.* FROM (
+		SELECT BBI_DOCNO, BBI_BBSTYPE, BBI_TIT, BBI_OPEN_YN, BBI_SELECT_CNT,
+			   FN_GETUSERID_TO_NAME(CMN_MAK_ID) AS CMN_MAK_NAME, CMN_MAK_ID,
+			   to_char(CMN_MAK_DATE,'YYYY-MM-DD') AS CMN_MAK_DATE, 
+			   to_char(CMN_UPD_DATE,'YYYY-MM-DD') AS CMN_UPD_DATE,
+			   FN_GETCOMCODE_CLS3NAME ('100', '113', BBI_MANUALTYPE) as BBI_MANUALTYPE
+		FROM BZ_BBS_INFO
+		WHERE BZ_BBS_INFO.CMN_DEL_STS = 'N'
+		  AND BBI_BBSTYPE = '2'
+		AND (CMN_MAK_ID = #{USER_ID} OR BBI_OPEN_YN = 'Y')
+		<if test="bis_Seqtype == 'name'">
+		AND BBI_TIT LIKE '%' || #{SeqTEXT} || '%'
+		</if>
+		<if test="bis_Seqtype == 'cmnt'">
+		AND BBI_CTNT LIKE '%' || #{SeqTEXT} || '%'
+		</if>
+		order by BBI_MANUALTYPE, CMN_MAK_DATE desc
+		) e
+	</select>
+	<resultMap id="getBizInfoResult" type="java.util.LinkedHashMap">
+		<result property="BBI_DOCNO" column="BBI_DOCNO"/>
+		<result property="BBI_BBSTYPE" column="BBI_BBSTYPE"/>
+		<result property="BBI_TIT" column="BBI_TIT"/>
+		<result property="BBI_OPEN_YN" column="BBI_OPEN_YN"/>
+		<result property="OPEN_CODE" column="OPEN_CODE"/>
+		<result property="BBI_SELECT_CNT" column="BBI_SELECT_CNT"/>
+		<result property="BBI_CTNT" column="BBI_CTNT" jdbcType="CLOB" javaType="java.lang.String"/>
+		<result property="BBI_MANUALTYPE" column="BBI_MANUALTYPE"/>
+		<result property="BBI_MANUALTYPE_CODE" column="BBI_MANUALTYPE_CODE"/>
+		<result property="CMN_MAK_NAME" column="CMN_MAK_NAME"/>
+		<result property="CMN_MAK_DATE" column="CMN_MAK_DATE"/>
+	</resultMap>
+	<select id="getBizInfo" parameterType="hashmap" resultMap="getBizInfoResult">
+		SELECT BBI_DOCNO, BBI_BBSTYPE, BBI_TIT, decode(BBI_OPEN_YN, 'Y', '공개','비공개') as BBI_OPEN_YN, BBI_OPEN_YN AS OPEN_CODE, BBI_SELECT_CNT, BBI_CTNT,
+		<choose>
+			<when test="BBSTYPE == 1">
+				FN_GETCOMCODE_CLS3NAME('100', '112', BBI_MANUALTYPE) AS BBI_MANUALTYPE, BBI_MANUALTYPE AS BBI_MANUALTYPE_CODE,
+			</when>
+			<otherwise>
+				FN_GETCOMCODE_CLS3NAME('100', '113', BBI_MANUALTYPE) AS BBI_MANUALTYPE, BBI_MANUALTYPE AS BBI_MANUALTYPE_CODE,
+			</otherwise>
+		</choose>
+		FN_GETUSERID_TO_NAME(CMN_MAK_ID) AS CMN_MAK_NAME, 
+		to_char(CMN_MAK_DATE,'YYYY-MM-DD') AS CMN_MAK_DATE 
+		FROM BZ_BBS_INFO 
+		WHERE BBI_DOCNO = #{BBI_DOCNO}
+	</select>
+	<select id="selectCommentList" parameterType="String" resultType="java.util.LinkedHashMap">
+		SELECT BBC_SEQ, BBC_CTNT, BZ_BBS_CMNT.CMN_MAK_ID AS CMN_MAK_ID, FN_GETUSERID_TO_NAME(BZ_BBS_CMNT.CMN_MAK_ID) AS CMN_MAK_NAME, 
+			   FN_GETDPTNAME(MUI_TEAMNO) AS TEAMNO, to_char(BZ_BBS_CMNT.CMN_MAK_DATE,'YYYY-MM-DD HH24:MI:SS') AS CMN_MAK_DATE
+		FROM BZ_BBS_CMNT, MF_USER_INFO
+		WHERE BZ_BBS_CMNT.CMN_MAK_ID = MUI_ID
+		  AND BBC_DOCNO = #{value}
+		order by BZ_BBS_CMNT.CMN_MAK_DATE desc
+	</select>
+	<select id="selectFileList" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+		SELECT BDA_DOCNO, BDA_BZSEQNO, BDA_BZDATE, BDA_CNTNTTYPE, BDA_ATCHFILE, BDA_CMNT,
+       			case when BDA_UPPATH like 'AddDoc%' then UploadPath || 'AddDoc/'
+       			     when not BDA_UPPATH like '%AddDoc%' then BDA_UPPATH || 'AddDoc/' 
+            		 else BDA_UPPATH end as BDA_UPPATH
+  		  from (SELECT BDA_DOCNO, BDA_BZCLS1, BDA_BZCLS2, BDA_BZCLS3, BDA_BZSEQNO, BDA_BZDATE, BDA_CNTNTTYPE, BDA_ATCHFILE, BDA_CMNT,    
+                CASE when BDA_UPPATH like '%/' or BDA_UPPATH like '%\' then BDA_UPPATH else BDA_UPPATH || '/' end as BDA_UPPATH 
+                FROM BZ_DATA_ATCH),
+      		   (SELECT CASE when MSC_UploadPath like '%/' or MSC_UploadPath like '%\' then MSC_UploadPath else MSC_UploadPath || '/' end as UploadPath
+      		    FROM MF_SYS_CTRL WHERE MSC_SeqNo = '1')
+		WHERE BDA_DOCNO = #{BDA_DOCNO}
+		  AND BDA_BZCLS1 = #{BDA_BZCLS1}
+		order by BDA_BZSEQNO
+	</select>
+	<select id="getFileInfo" parameterType="hashmap" resultType="java.util.LinkedHashMap">
+		SELECT BDA_DOCNO, BDA_BZSEQNO, BDA_BZDATE, BDA_CNTNTTYPE, BDA_ATCHFILE, BDA_CMNT,
+		        case when BDA_UPPATH like 'AddDoc%' then UploadPath || 'AddDoc/'
+       			     when not BDA_UPPATH like '%AddDoc%' then BDA_UPPATH || 'AddDoc/' 
+            		 else BDA_UPPATH end as BDA_UPPATH
+  		  from (SELECT BDA_DOCNO, BDA_BZCLS1, BDA_BZCLS2, BDA_BZCLS3, BDA_BZSEQNO, BDA_BZDATE, BDA_CNTNTTYPE, BDA_ATCHFILE, BDA_CMNT,    
+                CASE when BDA_UPPATH like '%/' or BDA_UPPATH like '%\' then BDA_UPPATH else BDA_UPPATH || '/' end as BDA_UPPATH 
+                FROM BZ_DATA_ATCH),
+      		   (SELECT CASE when MSC_UploadPath like '%/' or MSC_UploadPath like '%\' then MSC_UploadPath else MSC_UploadPath || '/' end as UploadPath
+      		    FROM MF_SYS_CTRL WHERE MSC_SeqNo = '1')
+		WHERE BDA_DOCNO = #{BDA_DOCNO}
+		  AND BDA_BZSEQNO = #{BDA_BZSEQNO}
+		  <if test="type != ''">
+		  	AND BDA_BZCLS1 = #{type}
+		  </if>
+	</select>
+	<select id="selectBiz_MaxDocno" resultType="String">
+		select nvl(max(TO_NUMBER(BBI_DOCNO)),'0') from BZ_BBS_INFO
+	</select>
+	<insert id="insertFileInfo" parameterType="hashmap">
+		INSERT INTO BZ_DATA_ATCH(BDA_DOCNO, BDA_BZCLS1, BDA_BZCLS2, BDA_BZCLS3, BDA_BZSEQNO, BDA_BZDATE, BDA_CNTNTTYPE, BDA_UPPATH, BDA_ATCHFILE, BDA_CMNT, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID)
+		VALUES(#{BDA_DOCNO}, #{BDA_BZCLS1}, #{BDA_BZCLS2}, #{BDA_BZCLS3}, #{BDA_BZSEQNO}, SYSDATE, #{BDA_CNTNTTYPE}, #{BDA_UPPATH}, #{BDA_ATCHFILE}, #{BDA_CMNT}, 'N', SYSDATE, #{CMN_MAK_PROG}, #{CMN_MAK_ID}, SYSDATE, #{CMN_UPD_PROG}, #{CMN_UPD_ID})
+	</insert>
+	<insert id="insertBizInfo" parameterType="hashmap">
+		INSERT INTO BZ_BBS_INFO(BBI_DOCNO, BBI_BBSTYPE, BBI_MANUALTYPE, BBI_TIT, BBI_OPEN_YN, BBI_CTNT, BBI_SELECT_CNT, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID)
+		VALUES(#{BBI_DOCNO}, #{BBI_BBSTYPE}, #{BBI_MANUALTYPE}, #{BBI_TIT}, #{BBI_OPEN_YN}, #{BBI_CTNT}, '0', 'N', SYSDATE, 'biz0202', #{CMN_MAK_ID}, SYSDATE, 'biz0202', #{CMN_UPD_ID})
+	</insert>
+	<insert id="insertCommentInfo" parameterType="hashmap">
+		INSERT INTO BZ_BBS_CMNT(BBC_SEQ, BBC_DOCNO, BBC_CTNT, CMN_DEL_STS, CMN_MAK_DATE, CMN_MAK_PROG, CMN_MAK_ID, CMN_UPD_DATE, CMN_UPD_PROG, CMN_UPD_ID)
+		VALUES((select nvl(max(TO_NUMBER(BBC_SEQ)),'0')+1 from BZ_BBS_CMNT), #{BBC_DOCNO}, #{BBC_CTNT}, 'N', SYSDATE, 'biz0202', #{CMN_MAK_ID}, SYSDATE, 'biz0202', #{CMN_UPD_ID})
+	</insert>
+	<update id="updateCommentInfo" parameterType="hashmap">
+		update BZ_BBS_CMNT set BBC_CTNT = #{BBC_CTNT}, CMN_UPD_DATE = SYSDATE, CMN_UPD_PROG = 'biz0202', CMN_UPD_ID = #{CMN_UPD_ID} where BBC_SEQ = #{BBC_SEQ} and BBC_DOCNO = #{BBC_DOCNO}
+	</update>
+	<update id="updateBizInfo" parameterType="hashmap">
+		update BZ_BBS_INFO SET BBI_TIT = #{BBI_TIT}, BBI_OPEN_YN = #{BBI_OPEN_YN}, BBI_CTNT = #{BBI_CTNT}, CMN_UPD_DATE = SYSDATE, CMN_UPD_PROG = 'biz0202', CMN_UPD_ID = #{CMN_UPD_ID} WHERE BBI_DOCNO = #{BBI_DOCNO}
+	</update>
+	<update id="updateFileSeqInfo" parameterType="hashmap">
+		update BZ_DATA_ATCH SET BDA_BZSEQNO = #{BDA_BZSEQNO} WHERE BDA_DOCNO = #{BDA_DOCNO} AND BDA_ATCHFILE = #{BDA_ATCHFILE}
+	</update>
+	<update id="updateBizSelectCntInfo" parameterType="String">
+		update BZ_BBS_INFO a SET a.BBI_SELECT_CNT = (select nvl(max(TO_NUMBER(b.BBI_SELECT_CNT)),'0')+1 from BZ_BBS_INFO b where a.BBI_DOCNO = b.BBI_DOCNO) WHERE a.BBI_DOCNO = #{value}
+	</update>
+	<delete id="deleteCommentInfo" parameterType="hashmap">
+		delete from BZ_BBS_CMNT where BBC_SEQ = #{BBC_SEQ} and BBC_DOCNO = #{BBC_DOCNO}
+	</delete>
+	<delete id="deleteFileInfo" parameterType="hashmap">
+		delete from BZ_DATA_ATCH WHERE BDA_DOCNO = #{BDA_DOCNO} AND BDA_BZSEQNO = #{BDA_BZSEQNO}
+	</delete>
+	<delete id="deleteCommentList" parameterType="hashmap">
+		delete from BZ_BBS_CMNT WHERE BBC_DOCNO = #{BBC_DOCNO}
+	</delete>
+	<delete id="deleteBizInfo" parameterType="hashmap">
+		delete from BZ_BBS_INFO WHERE BBI_DOCNO = #{BBI_DOCNO}
+	</delete>
+</mapper>

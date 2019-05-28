@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<settings>
+        <setting name="cacheEnabled" value="false" />
+        <setting name="jdbcTypeForNull" value="NULL" />
+		<setting name="mapUnderscoreToCamelCase" value="true" />
+		<setting name="callSettersOnNulls" value="true" />
+	</settings>
+	<mappers>
+		<mapper resource="mybatis/CmPageQry.xml" />
+		<mapper resource="mybatis/CmUserQry.xml" />
+		<mapper resource="mybatis/CmCodeQry.xml" />
+		<mapper resource="mybatis/CmDocQry.xml" />
+		<mapper resource="mybatis/CmFileQry.xml" />
+		<mapper resource="mybatis/CmKjpQry.xml" />
+		<mapper resource="mybatis/CmStatQry.xml" />
+		<mapper resource="mybatis/Sta0601Qry.xml" />
+		<mapper resource="mybatis/Sta0602Qry.xml" />
+		<mapper resource="mybatis/Sta0604Qry.xml" />
+		<mapper resource="mybatis/Sta0605Qry.xml" />
+		<mapper resource="mybatis/Sta0606Qry.xml" />
+		<mapper resource="mybatis/Sta0607Qry.xml" />
+		<mapper resource="mybatis/Sta0608Qry.xml" />
+		<mapper resource="mybatis/Sta0609Qry.xml" />
+		<mapper resource="mybatis/Sta0610Qry.xml" />
+		<mapper resource="mybatis/Sta0611Qry.xml" />
+		<mapper resource="mybatis/Base0101Qry.xml" />
+		<mapper resource="mybatis/Base0102Qry.xml" />
+		<mapper resource="mybatis/Base0103Qry.xml" />
+		<mapper resource="mybatis/Base0104Qry.xml" />
+		<mapper resource="mybatis/Base0105Qry.xml" />
+		<mapper resource="mybatis/Base0106Qry.xml" />
+		<mapper resource="mybatis/Base0107Qry.xml" />
+		<mapper resource="mybatis/Base0108Qry.xml" />
+		<mapper resource="mybatis/Base0109Qry.xml" />
+		<mapper resource="mybatis/Base0110Qry.xml" />
+		<mapper resource="mybatis/Base0120Qry.xml" />
+		<mapper resource="mybatis/Biz0202Qry.xml" />
+		<mapper resource="mybatis/Jour0301Qry.xml" />
+		<mapper resource="mybatis/Jour0303Qry.xml" />
+		<mapper resource="mybatis/Jour0304Qry.xml" />
+		<mapper resource="mybatis/Treat0401Qry.xml" />
+		<mapper resource="mybatis/Treat0402Qry.xml" />
+		<mapper resource="mybatis/Treat0403Qry.xml" />
+		<mapper resource="mybatis/Treat0404Qry.xml" />
+		<mapper resource="mybatis/Treat0405Qry.xml" />
+		<mapper resource="mybatis/Treat0406Qry.xml" />
+		<mapper resource="mybatis/Prevent0501Qry.xml" />
+		<mapper resource="mybatis/Prevent0502Qry.xml" />
+		<mapper resource="mybatis/Prevent0503Qry.xml" />
+		<mapper resource="mybatis/PrventClassQry.xml" />
+		<mapper resource="mybatis/SIGN0701Qry.xml" />
+		<mapper resource="mybatis/His0701Qry.xml" />
+		<mapper resource="mybatis/His0702Qry.xml" />
+		<mapper resource="mybatis/His0703Qry.xml" />
+	</mappers>
+</configuration>
